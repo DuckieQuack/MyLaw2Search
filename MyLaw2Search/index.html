@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyLaw2Search — Federal, State, Local & DOT Law Search</title>
+  <script src="https://unpkg.com"></script>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { margin: 0; padding: 20px; background: #fff; color: #202124; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 720px; margin-top: 8vh; text-align: center; }
+    h1 { font-size: 2.6rem; margin-bottom: 8px; letter-spacing: -1px; }
+    h1 span { color: #1a73e8; }
+    p.subtitle { color: #5f6368; margin-bottom: 24px; font-size: 0.95rem; }
+    .search-box { display: flex; gap: 8px; width: 100%; margin-bottom: 24px; }
+    input { flex: 1; padding: 14px 18px; font-size: 16px; border: 1px solid #dfe1e5; border-radius: 24px; outline: none; }
+    input:focus { box-shadow: 0 1px 6px rgba(32,33,36,0.28); border-color: transparent; }
+    button { padding: 0 24px; font-size: 15px; background: #1a73e8; color: #fff; border: none; border-radius: 24px; cursor: pointer; font-weight: bold; }
+    button:hover { background: #1557b0; }
+    #results { text-align: left; width: 100%; }
+    .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 14px; }
+    .card-meta { font-size: 12px; color: #188038; font-weight: bold; margin-bottom: 4px; }
+    .card-title { font-size: 18px; color: #1a0dab; font-weight: bold; margin: 0 0 8px 0; }
+    .card-text { font-size: 14px; line-height: 1.5; color: #3c4043; margin: 0 0 10px 0; }
+    .card a { font-size: 13px; color: #1a73e8; text-decoration: none; }
+    footer { margin-top: auto; padding-top: 40px; font-size: 12px; color: #70757a; max-width: 720px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>MyLaw<span>2</span>Search</h1>
+    <p class="subtitle">Search Local, State, Federal & DOT Laws and Regulations</p>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search 49 CFR, hours of service, state statutes..." />
+      <button onclick="runSearch()">Search</button>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <footer>
+    <strong>Disclaimer:</strong> MyLaw2Search provides public statutory and regulatory text for informational purposes only and does not constitute legal advice. Always verify current statutes with an official government source or licensed attorney.
+  </footer>
+
+  <script>
+    async function runSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      const resultsDiv = document.getElementById('results');
+      if (!query) return;
+
+      resultsDiv.innerHTML = '<p>Searching laws...</p>';
+
+      try {
+        const res = await fetch('https://algolia.net', {
+          method: 'POST',
+          headers: {
+            'X-Algolia-Application-Id': '20v4ug0oy9',
+            'X-Algolia-API-Key': 'ad46b2af9130322a3d1df10fae4b582a',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ query: query, hitsPerPage: 20 })
+        });
+
+        const data = await res.json();
+
+        if (!data.hits || data.hits.length === 0) {
+          resultsDiv.innerHTML = '<p>No matching laws found. Try another keyword or citation.</p>';
+          return;
+        }
+
+        resultsDiv.innerHTML = data.hits.map(law => `
+          <div class="card">
+            <div class="card-meta">${law.jurisdiction || 'Regulation'} • ${law.citation || ''}</div>
+            <div class="card-title">${law.title || 'Untitled Statute'}</div>
+            <p class="card-text">${law.text || law.description || JSON.stringify(law)}</p>
+            ${law.source_url ? `<a href="${law.source_url}" target="_blank">Verify Official Source ↗</a>` : ''}
+          </div>
+        `).join('');
+      } catch (err) {
+        resultsDiv.innerHTML = '<p>Error: ' + err.message + '</p>';
+      }
+    }
+
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') runSearch();
+    });
+  </script>
+
+</body>
+</html>
