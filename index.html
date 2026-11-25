@@ -181,6 +181,22 @@
     document.getElementById('searchInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') runSearch();
     });
+    async function loadRecentBills() {
+      const list = document.getElementById('recentBillsList');
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      const since = d.toISOString().split('T');
+      const url = 'https://' + 'www.federalregister.gov/api/v1/documents.json?conditions' + encodeURIComponent('[type][]') + '=PRESDOCU&conditions' + encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        list.innerHTML = data.results.map(b => `<div style="padding:8px 0; border-top:1px solid #e0e0e0;"><a href="${b.html_url}" target="_blank" style="color:#1a0dab; font-weight:bold; text-decoration:none;">${b.title}</a><div style="font-size:11px; color:#5f6368;">Published: ${b.publication_date}</div></div>`).join('');
+      } catch (e) {
+        list.textContent = 'Unable to load recent bills.';
+      }
+    }
+    loadRecentBills();
+
   </script>
 
 </body>
