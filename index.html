@@ -50,32 +50,23 @@
       const resultsDiv = document.getElementById('results');
       if (!query) return;
 
-      resultsDiv.innerHTML = '<p>Searching laws...</p>';
+      resultsDiv.innerHTML = '<p>Searching official federal & DOT regulations...</p>';
 
       try {
-        const res = await fetch('https://algolia.com', {
-          method: 'POST',
-          headers: {
-            'X-Algolia-Application-Id': '20v4ug0oy9',
-            'X-Algolia-API-Key': 'ad46b2af9130322a3d1df10fae4b582a',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ query: query, hitsPerPage: 20 })
-        });
-
+        const res = await fetch(`https://federalregister.gov[term]=${encodeURIComponent(query)}&per_page=15`);
         const data = await res.json();
 
-        if (!data.hits || data.hits.length === 0) {
-          resultsDiv.innerHTML = '<p>No matching laws found. Try another keyword or citation.</p>';
+        if (!data.results || data.results.length === 0) {
+          resultsDiv.innerHTML = '<p>No matching regulations found. Try another keyword or CFR citation.</p>';
           return;
         }
 
-        resultsDiv.innerHTML = data.hits.map(law => `
+        resultsDiv.innerHTML = data.results.map(law => `
           <div class="card">
-            <div class="card-meta">${law.jurisdiction || 'Regulation'} • ${law.citation || ''}</div>
-            <div class="card-title">${law.title || 'Untitled Statute'}</div>
-            <p class="card-text">${law.text || law.description || JSON.stringify(law)}</p>
-            ${law.source_url ? `<a href="${law.source_url}" target="_blank">Verify Official Source ↗</a>` : ''}
+            <div class="card-meta">${law.type || 'Federal / DOT Regulation'} • ${law.citation || law.document_number || ''} • ${law.publication_date || ''}</div>
+            <div class="card-title">${law.title || 'Untitled Regulation'}</div>
+            <p class="card-text">${law.abstract || 'Click below to read the full official regulatory text.'}</p>
+            ${law.html_url ? `<a href="${law.html_url}" target="_blank">Verify Official .Gov Source ↗</a>` : ''}
           </div>
         `).join('');
       } catch (err) {
