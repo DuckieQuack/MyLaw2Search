@@ -53,8 +53,8 @@
       resultsDiv.innerHTML = '<p>Searching official federal & DOT regulations...</p>';
 
       try {
-        const res = await fetch(`https://federalregister.gov[term]=${encodeURIComponent(query)}&per_page=15`);
-        const data = await res.json();
+        const apiUrl = 'https://' + 'www.federalregister.gov/api/v1/documents.json?conditions' + encodeURIComponent('[term]') + '=' + encodeURIComponent(query) + '&per_page=15';
+        const res = await fetch(apiUrl);
 
         if (!data.results || data.results.length === 0) {
           resultsDiv.innerHTML = '<p>No matching regulations found. Try another keyword or CFR citation.</p>';
