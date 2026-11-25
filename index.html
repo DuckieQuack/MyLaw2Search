@@ -144,8 +144,14 @@
       if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
         const scope = (currentFilter === 'local' && cityName) ? (cityName + ', ' + stateName + ' Municipal Code') : (stateName + ' State Statutes');
         const govQ = (currentFilter === 'local' && cityName ? cityName + ' ' : '') + stateName + ' statute OR code "' + query + '" site:.gov OR site:municode.com OR site:ecode360.com OR site:law.cornell.edu';
-        htmlOut += '<div class="card" style="border-left:4px solid #1a73e8;"><div class="card-meta">Official Statutory Match • ' + scope + '</div><div class="card-title">' + scope + ': "' + query + '"</div><p class="card-text">Read exact statutory sections, penalties, and legal definitions for "' + query + '".</p><a href="//://google.com' + encodeURIComponent(govQ) + '" target="_blank">Open Official Statute Text ↗</a></div>';
-      }
+const searchHref = 'https://google.com' + encodeURIComponent(govQ);
+
+htmlOut += '<div class="card" style="border-left:4px solid #1a73e8;">' +
+  '<div class="card-meta">Official Statutory Match &bull; ' + scope + '</div>' +
+  '<div class="card-title">' + scope + ': "' + query + '"</div>' +
+  '<div class="card-text">Read exact statutory sections, penalties, and legal definitions for "' + query + '".</div>' +
+  '<a href="' + searchHref + '" target="_blank" rel="noopener noreferrer">Open Official Statute Text &#8599;</a>' +
+'</div>';
 
       if (currentFilter === 'dot' || currentFilter === 'federal' || currentFilter === 'all') {
         try {
