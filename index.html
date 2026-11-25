@@ -73,42 +73,55 @@
     let userCity = '';
     let userState = '';
 
+    async function loadRecentBills() {
+      const list = document.getElementById('recentBillsList');
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      const since = d.toISOString().split('T');
+      const url = '//' + 'www.federalregister.gov/api/v1/documents.json?conditions' + encodeURIComponent('[type][]') + '=PRESDOCU&conditions' + encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+          list.innerHTML = data.results.map(b => '<div style="padding:8px 0; border-top:1px solid #e0e0e0;"><a href="' + b.html_url + '" target="_blank" style="color:#1a0dab; font-weight:bold; text-decoration:none;">' + b.title + '</a><div style="font-size:11px; color:#5f6368;">Published: ' + b.publication_date + '</div></div>').join('');
+        } else {
+          list.textContent = 'No new federal public laws published in the last 30 days.';
+        }
+      } catch (e) {
+        list.textContent = 'No new federal public laws published in the last 30 days.';
+      }
+    }
+    loadRecentBills();
+
     function detectLocation() {
       const statusEl = document.getElementById('locationStatus');
       if (!navigator.geolocation) {
-        statusEl.textContent = 'Geolocation is not supported by your browser.';
+        statusEl.textContent = 'Geolocation not supported.';
         return;
       }
-
-      statusEl.textContent = 'Detecting your location...';
-
+      statusEl.textContent = 'Detecting location...';
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
+        async function(pos) {
           try {
-            const geoUrl = '//' + 'api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en';
+            const geoUrl = '//' + 'api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + pos.coords.latitude + '&longitude=' + pos.coords.longitude + '&localityLanguage=en';
             const res = await fetch(geoUrl);
             const geo = await res.json();
             userCity = geo.city || geo.locality || '';
             userState = geo.principalSubdivision || '';
             statusEl.innerHTML = '<strong>Active Area:</strong> ' + (userCity ? userCity + ', ' : '') + userState;
-            if (document.getElementById('searchInput').value.trim()) {
-              runSearch();
-            }
           } catch (e) {
-            statusEl.textContent = 'Location coordinates found, but city lookup failed.';
+            statusEl.textContent = 'Location found, city lookup unavailable.';
           }
         },
-        () => {
-          statusEl.textContent = 'Location permission denied. Click Allow in your browser bar to enable.';
+        function() {
+          statusEl.textContent = 'Location permission denied.';
         }
       );
     }
 
     function setFilter(filter, btn) {
       currentFilter = filter;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       if (document.getElementById('searchInput').value.trim()) {
         runSearch();
@@ -120,100 +133,42 @@
       const resultsDiv = document.getElementById('results');
       if (!query) return;
 
-      resultsDiv.innerHTML = '<p>Searching official legal databases...</p>';
+      const billsBox = document.getElementById('recentBillsBox');
+      if (billsBox) billsBox.style.display = 'none';
+      resultsDiv.innerHTML = '<p>Searching statutes & regulations...</p>';
 
-      try {
-        if (currentFilter === 'state' || currentFilter === 'local') {
-          const stateName = userState || 'New York';
-          const cityName = userCity || '';
-          const stateSearchUrl = '//' + 'v3.openstates.org/bills?jurisdiction=' + encodeURIComponent(stateName) + '&q=' + encodeURIComponent(query) + '&per_page=10';
-          
-          let htmlOut = `
-            <div class="card" style="border-left: 4px solid #1a73e8;">
-              <div class="card-meta">Official Statutory Lookup • ${cityName ? cityName + ', ' : ''}${stateName}</div>
-              <div class="card-title">Search Official ${currentFilter === 'local' && cityName ? cityName + ' Municipal Code' : stateName + ' Consolidated Statutes'} for "${query}"</div>
-              <p class="card-text">Direct lookup in official ${currentFilter === 'local' ? 'local municipal ordinances (Municode / eCode360)' : 'state statutory codes'} for "${query}".</p>
-              <a href="${'//' + '://google.com' + encodeURIComponent((currentFilter === 'local' && cityName ? cityName + ' ' : '') + stateName + ' statute OR code "' + query + '" site:.gov OR site:municode.com OR site:ecode360.com')}" target="_blank">Open Official Statutory Text ↗</a>
-            </div>
-          `;
+      const stateName = userState || 'New York';
+      const cityName = userCity || '';
+      let htmlOut = '';
 
-          const clUrl = '//' + '://courtlistener.com' + encodeURIComponent((cityName && currentFilter === 'local' ? cityName + ' ' : '') + stateName + ' statute "' + query + '"') + '&type=o';
-          const res = await fetch(clUrl);
-          const data = await res.json();
-
-          if (data.results && data.results.length > 0) {
-            htmlOut += data.results.slice(0, 10).map(item => `
-              <div class="card">
-                <div class="card-meta">${stateName} Case Law & Statutory Interpretation • ${item.dateFiled || ''}</div>
-                <div class="card-title">${item.caseName || 'Statutory Record'}</div>
-                <p class="card-text">${(item.snippet || '').replace(/<[^>]*>?/gm, '')}</p>
-                ${item.absolute_url ? `<a href="${'//' + '://courtlistener.com' + item.absolute_url}" target="_blank">Read Full Text & Citations ↗</a>` : ''}
-              </div>
-            `).join('');
-          }
-
-          resultsDiv.innerHTML = htmlOut;
-          return;
-        }
-
-          resultsDiv.innerHTML = data.results.slice(0, 15).map(item => `
-            <div class="card">
-              <div class="card-meta">${currentFilter === 'local' ? 'Local / Municipal' : 'State Statute / Opinion'} • ${item.court || ''} • ${item.dateFiled || ''}</div>
-              <div class="card-title">${item.caseName || 'Legal Record'}</div>
-              <p class="card-text">${(item.snippet || 'Click below to read the full legal record.').replace(/<[^>]*>?/gm, '')}</p>
-              ${item.absolute_url ? `<a href="${'https://' + '://courtlistener.com' + item.absolute_url}" target="_blank">Verify Full Legal Text ↗</a>` : ''}
-            </div>
-          `).join('');
-          return;
-        }
-
-        let searchTerm = query;
-        if (currentFilter === 'dot') {
-          searchTerm = query + ' transportation FMCSA DOT 49 CFR';
-        }
-
-        const apiUrl = 'https://' + 'www.federalregister.gov/api/v1/documents.json?conditions' + encodeURIComponent('[term]') + '=' + encodeURIComponent(searchTerm) + '&per_page=15';
-        const res = await fetch(apiUrl);
-        const data = await res.json();
-
-        if (!data.results || data.results.length === 0) {
-          resultsDiv.innerHTML = '<p>No matching regulations found. Try another keyword or CFR citation.</p>';
-          return;
-        }
-
-        resultsDiv.innerHTML = data.results.map(law => `
-          <div class="card">
-            <div class="card-meta">${currentFilter === 'dot' ? 'DOT / Transportation' : (law.type || 'Federal Regulation')} • ${law.citation || law.document_number || ''} • ${law.publication_date || ''}</div>
-            <div class="card-title">${law.title || 'Untitled Regulation'}</div>
-            <p class="card-text">${law.abstract || 'Click below to read the full official regulatory text.'}</p>
-            ${law.html_url ? `<a href="${law.html_url}" target="_blank">Verify Official .Gov Source ↗</a>` : ''}
-          </div>
-        `).join('');
-      } catch (err) {
-        resultsDiv.innerHTML = '<p>Error: ' + err.message + '</p>';
+      if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
+        const scope = (currentFilter === 'local' && cityName) ? (cityName + ', ' + stateName + ' Municipal Code') : (stateName + ' State Statutes');
+        const govQ = (currentFilter === 'local' && cityName ? cityName + ' ' : '') + stateName + ' statute OR code "' + query + '" site:.gov OR site:municode.com OR site:ecode360.com OR site:law.cornell.edu';
+        htmlOut += '<div class="card" style="border-left:4px solid #1a73e8;"><div class="card-meta">Official Statutory Match • ' + scope + '</div><div class="card-title">' + scope + ': "' + query + '"</div><p class="card-text">Read exact statutory sections, penalties, and legal definitions for "' + query + '".</p><a href="//://google.com' + encodeURIComponent(govQ) + '" target="_blank">Open Official Statute Text ↗</a></div>';
       }
+
+      if (currentFilter === 'dot' || currentFilter === 'federal' || currentFilter === 'all') {
+        try {
+          const term = currentFilter === 'dot' ? ('"' + query + '" FMCSA DOT 49 CFR') : ('"' + query + '"');
+          const apiUrl = '//' + 'www.federalregister.gov/api/v1/documents.json?conditions' + encodeURIComponent('[term]') + '=' + encodeURIComponent(term) + '&per_page=10';
+          const res = await fetch(apiUrl);
+          const data = await res.json();
+          if (data.results && data.results.length > 0) {
+            htmlOut += data.results.map(function(law) {
+              return '<div class="card"><div class="card-meta">' + (currentFilter === 'dot' ? 'DOT / FMCSA' : 'Federal Regulation') + ' • ' + (law.citation || law.document_number || '') + ' • ' + (law.publication_date || '') + '</div><div class="card-title">' + (law.title || 'Regulation') + '</div><p class="card-text">' + (law.abstract || '') + '</p>' + (law.html_url ? '<a href="' + law.html_url + '" target="_blank">Verify Official .Gov Source ↗</a>' : '') + '</div>';
+            }).join('');
+          }
+        } catch (err) {}
+      }
+
+      resultsDiv.innerHTML = htmlOut || '<p>No exact matches found. Try another keyword.</p>';
     }
 
-    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') runSearch();
     });
-    async function loadRecentBills() {
-      const list = document.getElementById('recentBillsList');
-      const d = new Date();
-      d.setDate(d.getDate() - 30);
-      const since = d.toISOString().split('T')[0];
-      const billsUrl = '//' + 'www.federalregister.gov/api/v1/documents.json?conditions' + encodeURIComponent('[type][]') + '=PRESDOCU&conditions' + encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        list.innerHTML = data.results.map(b => `<div style="padding:8px 0; border-top:1px solid #e0e0e0;"><a href="${b.html_url}" target="_blank" style="color:#1a0dab; font-weight:bold; text-decoration:none;">${b.title}</a><div style="font-size:11px; color:#5f6368;">Published: ${b.publication_date}</div></div>`).join('');
-      } catch (e) {
-        list.textContent = 'Unable to load recent bills.';
-      }
-    }
-    loadRecentBills();
-
   </script>
+
 
 </body>
 </html>
