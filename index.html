@@ -54,7 +54,13 @@
       <button class="filter-btn" onclick="setFilter('state', this)">State Laws</button>
       <button class="filter-btn" onclick="setFilter('local', this)">Local & Municipal</button>
     </div>
-
+<div id="recentBillsBox" style="text-align:left; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:12px; padding:16px; margin-bottom:20px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <span style="font-size:24px; background:#e8f0fe; padding:6px 10px; border-radius:8px;">⚖️</span>
+        <strong style="font-size:16px; color:#202124;">Bills & Public Laws Passed (Last 30 Days)</strong>
+      </div>
+      <div id="recentBillsList" style="font-size:13px; color:#5f6368;">Loading newly passed laws...</div>
+    </div>
     <div id="results"></div>
   </div>
 
