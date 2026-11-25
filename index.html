@@ -124,21 +124,37 @@
 
       try {
         if (currentFilter === 'state' || currentFilter === 'local') {
-          let locationPrefix = '';
-          if (currentFilter === 'local' && userCity) {
-            locationPrefix = userCity + ' ' + userState + ' municipal code ordinance ';
-          } else if (userState) {
-            locationPrefix = userState + ' ';
-          }
+          const stateName = userState || 'New York';
+          const cityName = userCity || '';
+          const stateSearchUrl = '//' + 'v3.openstates.org/bills?jurisdiction=' + encodeURIComponent(stateName) + '&q=' + encodeURIComponent(query) + '&per_page=10';
+          
+          let htmlOut = `
+            <div class="card" style="border-left: 4px solid #1a73e8;">
+              <div class="card-meta">Official Statutory Lookup • ${cityName ? cityName + ', ' : ''}${stateName}</div>
+              <div class="card-title">Search Official ${currentFilter === 'local' && cityName ? cityName + ' Municipal Code' : stateName + ' Consolidated Statutes'} for "${query}"</div>
+              <p class="card-text">Direct lookup in official ${currentFilter === 'local' ? 'local municipal ordinances (Municode / eCode360)' : 'state statutory codes'} for "${query}".</p>
+              <a href="${'//' + '://google.com' + encodeURIComponent((currentFilter === 'local' && cityName ? cityName + ' ' : '') + stateName + ' statute OR code "' + query + '" site:.gov OR site:municode.com OR site:ecode360.com')}" target="_blank">Open Official Statutory Text ↗</a>
+            </div>
+          `;
 
-          const stateUrl = '//' + '://courtlistener.com' + encodeURIComponent(locationPrefix + query) + '&type=o';
-          const res = await fetch(stateUrl);
+          const clUrl = '//' + '://courtlistener.com' + encodeURIComponent((cityName && currentFilter === 'local' ? cityName + ' ' : '') + stateName + ' statute "' + query + '"') + '&type=o';
+          const res = await fetch(clUrl);
           const data = await res.json();
 
-          if (!data.results || data.results.length === 0) {
-            resultsDiv.innerHTML = '<p>No matching ' + currentFilter + ' laws found. Try broadening your search or clicking "Use My Location".</p>';
-            return;
+          if (data.results && data.results.length > 0) {
+            htmlOut += data.results.slice(0, 10).map(item => `
+              <div class="card">
+                <div class="card-meta">${stateName} Case Law & Statutory Interpretation • ${item.dateFiled || ''}</div>
+                <div class="card-title">${item.caseName || 'Statutory Record'}</div>
+                <p class="card-text">${(item.snippet || '').replace(/<[^>]*>?/gm, '')}</p>
+                ${item.absolute_url ? `<a href="${'//' + '://courtlistener.com' + item.absolute_url}" target="_blank">Read Full Text & Citations ↗</a>` : ''}
+              </div>
+            `).join('');
           }
+
+          resultsDiv.innerHTML = htmlOut;
+          return;
+        }
 
           resultsDiv.innerHTML = data.results.slice(0, 15).map(item => `
             <div class="card">
