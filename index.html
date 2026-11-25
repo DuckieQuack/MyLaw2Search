@@ -87,7 +87,7 @@
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           try {
-            const geoUrl = 'https://' + 'api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en';
+            const geoUrl = '//' + 'api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en';
             const res = await fetch(geoUrl);
             const geo = await res.json();
             userCity = geo.city || geo.locality || '';
@@ -131,7 +131,7 @@
             locationPrefix = userState + ' ';
           }
 
-          const stateUrl = 'https://' + '://courtlistener.com' + encodeURIComponent(locationPrefix + query) + '&type=o';
+          const stateUrl = '//' + '://courtlistener.com' + encodeURIComponent(locationPrefix + query) + '&type=o';
           const res = await fetch(stateUrl);
           const data = await res.json();
 
@@ -185,8 +185,8 @@
       const list = document.getElementById('recentBillsList');
       const d = new Date();
       d.setDate(d.getDate() - 30);
-      const since = d.toISOString().split('T');
-      const url = 'https://' + 'www.federalregister.gov/api/v1/documents.json?conditions' + encodeURIComponent('[type][]') + '=PRESDOCU&conditions' + encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
+      const since = d.toISOString().split('T')[0];
+      const billsUrl = '//' + 'www.federalregister.gov/api/v1/documents.json?conditions' + encodeURIComponent('[type][]') + '=PRESDOCU&conditions' + encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
       try {
         const res = await fetch(url);
         const data = await res.json();
