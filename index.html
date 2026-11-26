@@ -354,41 +354,23 @@
       resultsDiv.innerHTML = html;
     }
 
-    function loadRecentBills() {
+        function loadRecentBills() {
       const list = document.getElementById('recentBillsList');
       if (!list) return;
-      list.textContent = 'Checking newly passed federal public laws & executive actions...';
-
-      const d = new Date();
-      d.setDate(d.getDate() - 45);
-      const since = d.toISOString().split('T');
-
-      const base = ['https:', '', 'www.federalregister.gov', 'api', 'v1', 'documents'].join('/');
-      const url = base + '?format=json&conditions' +
-        encodeURIComponent('[type][]') + '=PRESDOCU&conditions' +
-        encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
-
-      fetch(url)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (data && data.results && data.results.length > 0) {
-            list.innerHTML = data.results.map(function(b) {
-              return '<div style="padding:8px 0; border-top:1px solid #e0e0e0;">' +
-                '<a href="' + escapeHTML(b.html_url) + '" target="_blank" rel="noopener" style="color:#1a0dab; font-weight:bold; text-decoration:none;">' + escapeHTML(b.title) + '</a>' +
-                '<div style="font-size:11px; color:#5f6368; margin-top:2px;">Published: ' + escapeHTML(b.publication_date) + ' • Doc #' + escapeHTML(b.document_number || '') + '</div>' +
-              '</div>';
-            }).join('');
-          } else {
-            list.textContent = 'No new federal actions published in the last 45 days.';
-          }
-        })
-        .catch(function() {
-          const congressUrl = ['https:', '', 'www.congress.gov', 'search'].join('/') + '?q=%7B%22source%22%3A%22legislation%22%2C%22bill-status%22%3A%22law%22%7D';
-          list.innerHTML = 'Live feed paused by browser security. <a href="' + congressUrl + '" target="_blank" rel="noopener" style="color:#1a73e8; font-weight:bold;">View Newly Enacted Laws on Congress.gov ↗</a>';
-        });
+      const congressLaws = ['https:', '', 'www.congress.gov', 'public-laws', '119th-congress'].join('/');
+      const fedRegRecent = ['https:', '', 'www.federalregister.gov', 'presidential-documents'].join('/');
+      list.innerHTML =
+        '<div style="padding:6px 0; border-top:1px solid #e0e0e0;">' +
+          '<a href="' + congressLaws + '" target="_blank" rel="noopener" style="color:#1a0dab; font-weight:bold; text-decoration:none;">119th Congress — Newly Enacted Public Laws (Congress.gov) ↗</a>' +
+          '<div style="font-size:11px; color:#5f6368; margin-top:2px;">Official U.S. Congress statutory enactments & public law numbers</div>' +
+        '</div>' +
+        '<div style="padding:6px 0; border-top:1px solid #e0e0e0;">' +
+          '<a href="' + fedRegRecent + '" target="_blank" rel="noopener" style="color:#1a0dab; font-weight:bold; text-decoration:none;">Recent Presidential Proclamations & Executive Orders (FederalRegister.gov) ↗</a>' +
+          '<div style="font-size:11px; color:#5f6368; margin-top:2px;">Official daily Federal Register executive actions</div>' +
+        '</div>';
     }
 
-    setTimeout(loadRecentBills, 300);
+    loadRecentBills();
   </script>
 </body>
 </html>
