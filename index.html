@@ -169,6 +169,7 @@
         runSearch();
       }
     }
+
     function buildEcfrUrl(query, dotOnly) {
       const base = ['https:', '', 'www.ecfr.gov', 'api', 'search', 'v1', 'results'].join('/');
       let url = base + '?query=' + encodeURIComponent(query) + '&per_page=5';
@@ -208,31 +209,29 @@
 
       let allCards = [];
 
-      // 1. Official State & Municipal Statutory Portal Card (Clean, unblocked links)
       if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
         const scope = (currentFilter === 'local' && cityName)
           ? (cityName + ', ' + stateName + ' Municipal Code')
           : (stateName + ' State Statutes & Codes');
 
-        const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'search', 'legislation'].join('/') + '?term=' + encodeURIComponent(query);
-        const justiaUrl = ['https:', '', '://justia.com', 'search'].join('/') + '?query=' + encodeURIComponent(stateName + ' ' + query);
+        const stateSlug = stateName.toLowerCase().replace(/\s+/g, '-');
+        const justiaStateUrl = ['https:', '', '://justia.com', 'codes', stateSlug, ''].join('/');
+        const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug.replace('-', '_')].join('/');
         const municodeUrl = ['https:', '', '://municode.com'].join('/');
 
         allCards.push(
           '<div class="card">' +
             '<div class="card-meta">OFFICIAL STATUTORY PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
             '<div class="card-title">' + escapeHTML(scope) + ': "' + escapeHTML(query) + '"</div>' +
-            '<div class="card-text">Look up codified state penal laws, vehicle & traffic codes, and local municipal ordinances.</div>' +
-            (stateName === 'New York' ? '<a href="' + nySenateUrl + '" rel="noreferrer">NY Senate Laws ↗</a>' : '') +
-            '<a href="' + justiaUrl + '" rel="noreferrer">Justia Statutory Lookup ↗</a>' +
-            '<a href="' + municodeUrl + '" rel="noreferrer">Municode Library ↗</a>' +
+            '<div class="card-text">Browse official state statutory codes and municipal ordinances directly without search-query redirect blocks.</div>' +
+            '<a href="' + justiaStateUrl + '" target="_blank" rel="noopener">Justia ' + escapeHTML(stateName) + ' Code ↗</a>' +
+            '<a href="' + cornellStateUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' ↗</a>' +
+            '<a href="' + municodeUrl + '" target="_blank" rel="noopener">Municode Library ↗</a>' +
           '</div>'
         );
       }
-      // 2. Run live API calls in parallel for fast, real legal results
       const tasks = [];
 
-      // A. Live eCFR (Code of Federal Regulations & 49 CFR DOT Rules)
       if (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot') {
         tasks.push(
           fetchWithTimeout(buildEcfrUrl(query, currentFilter === 'dot'), 8000)
@@ -249,17 +248,16 @@
                       '<div class="card-meta">LIVE eCFR • ' + escapeHTML(titleNum.toUpperCase()) + '</div>' +
                       '<div class="card-title">' + escapeHTML(section) + '</div>' +
                       '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
-                      '<a href="' + ecfrLink + '" rel="noreferrer">Read Codified CFR Text ↗</a>' +
+                      '<a href="' + ecfrLink + '" target="_blank" rel="noopener">Read Codified CFR Text ↗</a>' +
                     '</div>'
                   );
                 });
               }
             })
-            .catch(function() { /* skip silently if eCFR is slow */ })
+            .catch(function() {})
         );
       }
 
-      // B. Live CourtListener Case Law (Federal & State Court Opinions)
       if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'federal') {
         const searchState = (currentFilter === 'state') ? stateName : '';
         tasks.push(
@@ -281,17 +279,16 @@
                       '<div class="card-meta">CASE LAW • ' + escapeHTML(court.toUpperCase()) + (citation ? ' • ' + escapeHTML(citation) : '') + (dateFiled ? ' (' + escapeHTML(dateFiled) + ')' : '') + '</div>' +
                       '<div class="card-title">' + escapeHTML(caseName) + '</div>' +
                       '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
-                      '<a href="' + caseUrl + '" rel="noreferrer">Read Court Opinion ↗</a>' +
+                      '<a href="' + caseUrl + '" target="_blank" rel="noopener">Read Court Opinion ↗</a>' +
                     '</div>'
                   );
                 });
               }
             })
-            .catch(function() { /* skip silently if CourtListener rate-limits */ })
+            .catch(function() {})
         );
       }
 
-      // C. Live Federal Register (New Rules, Proposed Rules & DOT Notices)
       if (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot') {
         let params = 'conditions' + encodeURIComponent('[term]') + '=' + encodeURIComponent(query) + '&per_page=4';
         if (currentFilter === 'dot') {
@@ -310,13 +307,13 @@
                       '<div class="card-meta">FEDERAL REGISTER • ' + escapeHTML(agencies.toUpperCase()) + ' • ' + escapeHTML(item.publication_date || '') + '</div>' +
                       '<div class="card-title">' + escapeHTML(item.title) + '</div>' +
                       '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
-                      '<a href="' + escapeHTML(item.html_url) + '" rel="noreferrer">Read Federal Register ↗</a>' +
+                      '<a href="' + escapeHTML(item.html_url) + '" target="_blank" rel="noopener">Read Federal Register ↗</a>' +
                     '</div>'
                   );
                 });
               }
             })
-            .catch(function() { /* skip silently */ })
+            .catch(function() {})
         );
       }
 
@@ -334,4 +331,3 @@
   </script>
 </body>
 </html>
-
