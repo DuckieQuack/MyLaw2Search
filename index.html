@@ -110,11 +110,9 @@
       for (let i = 0; i < twoWordStates.length; i++) {
         const st = twoWordStates[i];
         const regex = new RegExp('\\b' + st + '\\b', 'i');
-        if (regex.test(lower)) {
-          return { detectedState: STATE_MAP[st], cleanedQuery: rawQuery.replace(regex, '').trim() };
+                  return { detectedState: STATE_MAP[st], cleanedQuery: rawQuery.replace(regex, '').trim() };
         }
       }
-      // Check single-word state names and 2-letter abbreviations (e.g., "texas", "pa", "ca")
       const tokens = lower.split(/\s+/);
       for (let j = 0; j < tokens.length; j++) {
         const cleanTok = tokens[j].replace(/[^a-z]/g, '');
@@ -125,7 +123,6 @@
       }
       return { detectedState: '', cleanedQuery: rawQuery };
     }
-
 
     function nyLawUrl(lawCode, section) {
       return ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', lawCode, section].join('/');
@@ -163,10 +160,51 @@
           { sec: 'PL § 135.10', name: 'Unlawful Imprisonment in the First Degree', desc: 'Restraining another person under circumstances which expose the latter to a risk of serious physical injury (Class E Felony).', url: nyLawUrl('PEN', '135.10') },
           { sec: 'PL § 135.20', name: 'Kidnapping in the Second Degree', desc: 'Abducting another person with intent to prevent liberation by secreting or using deadly physical force (Class B Felony).', url: nyLawUrl('PEN', '135.20') }
         ]
+      },
+      {
+        id: 'ny-penal-205',
+        category: 'state',
+        jurisdiction: 'New York Penal Law',
+        code: 'NY Penal Law Article 205',
+        title: 'Resisting Arrest, Escape & Obstruction of Governmental Administration',
+        keywords: 'resisting arrest obstruction police officer handcuff escape custody hindering prosecution 205 195',
+        summary: 'Governs resisting a lawful arrest, obstructing police/public servants, and escaping from custody.',
+        substatutes: [
+          { sec: 'PL § 205.30', name: 'Resisting Arrest', desc: 'Intentionally preventing or attempting to prevent a police officer or peace officer from effecting an authorized arrest (Class A Misdemeanor).', url: nyLawUrl('PEN', '205.30') },
+          { sec: 'PL § 195.05', name: 'Obstructing Governmental Administration (2nd Degree)', desc: 'Intentionally obstructing, impairing, or perverting the administration of law or preventing a public servant from performing an official function (Class A Misdemeanor).', url: nyLawUrl('PEN', '195.05') },
+          { sec: 'PL § 205.05', name: 'Escape in the Third Degree', desc: 'Escaping from custody after being arrested or detained by a peace officer or police officer (Class A Misdemeanor).', url: nyLawUrl('PEN', '205.05') }
+        ]
       }
     ];
-
-          STATUTE_TREE.push(
+    STATUTE_TREE.push(
+      {
+        id: 'ny-penal-120',
+        category: 'state',
+        jurisdiction: 'New York Penal Law',
+        code: 'NY Penal Law Article 120',
+        title: 'Assault, Menacing & Reckless Endangerment',
+        keywords: 'assault battery fight injury menacing reckless endangerment weapon strangulation 120',
+        summary: 'Defines misdemeanor and felony assault, physical injury, menacing, and reckless endangerment offenses.',
+        substatutes: [
+          { sec: 'PL § 120.00', name: 'Assault in the Third Degree', desc: 'Intentionally or recklessly causing physical injury to another person (Class A Misdemeanor).', url: nyLawUrl('PEN', '120.00') },
+          { sec: 'PL § 120.05', name: 'Assault in the Second Degree', desc: 'Causing serious physical injury, injury with a deadly weapon/dangerous instrument, or injury to a police/peace officer (Class D Felony).', url: nyLawUrl('PEN', '120.05') },
+          { sec: 'PL § 120.14', name: 'Menacing in the Second Degree', desc: 'Intentionally placing another person in reasonable fear of physical injury by displaying a deadly weapon or dangerous instrument (Class A Misdemeanor).', url: nyLawUrl('PEN', '120.14') }
+        ]
+      },
+      {
+        id: 'ny-vtl-1192',
+        category: 'state',
+        jurisdiction: 'New York Vehicle & Traffic Law',
+        code: 'NY VTL § 1192',
+        title: 'Driving While Intoxicated (DWI / DWAI Alcohol & Drugs)',
+        keywords: 'dwi dui drunk driving intoxicated bac breathalyzer alcohol drugs impaired 1192',
+        summary: 'New York laws prohibiting operating a motor vehicle while impaired or intoxicated by alcohol or drugs.',
+        substatutes: [
+          { sec: 'VTL § 1192(1)', name: 'Driving While Ability Impaired (DWAI)', desc: 'Operating a motor vehicle while ability is impaired by alcohol (BAC .05% to .07%; Traffic Infraction).', url: nyLawUrl('VAT', '1192') },
+          { sec: 'VTL § 1192(2)', name: 'Driving While Intoxicated (Per Se)', desc: 'Operating a motor vehicle with a Blood Alcohol Concentration (BAC) of .08% or higher (Misdemeanor).', url: nyLawUrl('VAT', '1192') },
+          { sec: 'VTL § 1192(2-a)', name: 'Aggravated DWI', desc: 'Operating a vehicle with a BAC of .18% or higher, or with a child under 16 in the vehicle (Leandra’s Law).', url: nyLawUrl('VAT', '1192') }
+        ]
+      },
       {
         id: 'dot-49cfr-395',
         category: 'dot',
@@ -179,20 +217,6 @@
           { sec: '49 CFR § 395.3', name: 'Maximum Driving Time for Property-Carrying Vehicles', desc: '11-hour driving limit after 10 consecutive hours off duty; 14-hour on-duty window; 30-minute break requirement.', url: ecfrSecUrl('49', '395', '395.3') },
           { sec: '49 CFR § 395.8', name: 'Driver’s Record of Duty Status (RODS)', desc: 'Requires commercial motor vehicle drivers to record their duty status for each 24-hour period.', url: ecfrSecUrl('49', '395', '395.8') },
           { sec: '49 CFR § 395.22', name: 'Motor Carrier Responsibilities — ELD', desc: 'Mandates certified Electronic Logging Devices (ELDs) and technical transfer standards during roadside inspections.', url: ecfrSecUrl('49', '395', '395.22') }
-        ]
-      },
-      {
-        id: 'dot-49cfr-392',
-        category: 'dot',
-        jurisdiction: 'Federal Motor Carrier Safety Regulations (DOT / FMCSA)',
-        code: '49 CFR Part 392',
-        title: 'Driving of Commercial Motor Vehicles (Safety, Phones & Traffic Compliance)',
-        keywords: 'dot commercial vehicle phone texting radar detector alcohol drugs speeding 392 cdl',
-        summary: 'Federal operational rules for CMV drivers including distracted driving, substance prohibitions, and traffic law compliance.',
-        substatutes: [
-          { sec: '49 CFR § 392.2', name: 'Applicable Operating Rules', desc: 'Every commercial motor vehicle must be operated in accordance with the laws, ordinances, and regulations of the jurisdiction.', url: ecfrSecUrl('49', '392', '392.2') },
-          { sec: '49 CFR § 392.80', name: 'Prohibition Against Texting', desc: 'Prohibits commercial drivers from texting while driving a CMV.', url: ecfrSecUrl('49', '392', '392.80') },
-          { sec: '49 CFR § 392.82', name: 'Using a Hand-Held Mobile Telephone', desc: 'Prohibits holding a mobile phone to make a call or reaching for a phone while operating a CMV.', url: ecfrSecUrl('49', '392', '392.82') }
         ]
       }
     );
@@ -222,8 +246,7 @@
         runSearch();
       }
     }
-
-          function detectLocation() {
+    function detectLocation() {
       const statusEl = document.getElementById('locationStatus');
       if (!navigator.geolocation) {
         statusEl.textContent = 'Geolocation not supported.';
@@ -249,7 +272,6 @@
     }
 
     function runSearch() {
-          function runSearch() {
       const rawQuery = document.getElementById('searchInput').value.trim();
       const resultsDiv = document.getElementById('results');
       if (!rawQuery) return;
@@ -257,12 +279,10 @@
       const billsBox = document.getElementById('recentBillsBox');
       if (billsBox) billsBox.style.display = 'none';
 
-      // Detect if the user typed a state name/abbreviation in their search
       const parsed = detectStateFromQuery(rawQuery);
       const activeState = parsed.detectedState || userState || 'New York';
       const topicQuery = parsed.cleanedQuery || rawQuery;
 
-      // Update location status bar if a state was detected from the search text
       if (parsed.detectedState) {
         const statusEl = document.getElementById('locationStatus');
         if (statusEl) statusEl.innerHTML = '<strong>Searching State:</strong> ' + escapeHTML(activeState);
@@ -272,7 +292,6 @@
       const stateSlug = activeState.toLowerCase().replace(/\s+/g, '_');
       const stateHyphen = activeState.toLowerCase().replace(/\s+/g, '-');
 
-      // Match local pre-indexed Statute -> Substatute hierarchy
       const matches = STATUTE_TREE.filter(function(s) {
         if (currentFilter !== 'all' && s.category !== currentFilter) return false;
         if ((s.category === 'state' || s.category === 'local') && activeState !== 'New York') return false;
@@ -282,7 +301,6 @@
 
       let html = '';
 
-      // Dynamic State Statutory Drill-Down Card (automatically adapts to whichever state was searched or located!)
       if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
         const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
         const cornellSearchUrl = ['https:', '', 'www.law.cornell.edu', 'search', 'site', encodeURIComponent(activeState + ' ' + topicQuery)].join('/');
@@ -336,43 +354,41 @@
       resultsDiv.innerHTML = html;
     }
 
+    function loadRecentBills() {
+      const list = document.getElementById('recentBillsList');
+      if (!list) return;
+      list.textContent = 'Checking newly passed federal public laws & executive actions...';
 
-     function loadRecentBills() {
-   const list = document.getElementById('recentBillsList');
-   if (!list) return;
-   list.textContent = 'Checking newly passed federal public laws & executive actions...';
+      const d = new Date();
+      d.setDate(d.getDate() - 45);
+      const since = d.toISOString().split('T');
 
-   const d = new Date();
-   d.setDate(d.getDate() - 45);
-   const since = d.toISOString().split('T');
+      const base = ['https:', '', 'www.federalregister.gov', 'api', 'v1', 'documents'].join('/');
+      const url = base + '?format=json&conditions' +
+        encodeURIComponent('[type][]') + '=PRESDOCU&conditions' +
+        encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
 
-   const base = ['https:', '', 'www.federalregister.gov', 'api', 'v1', 'documents'].join('/');
-   const url = base + '?format=json&conditions' +
-     encodeURIComponent('[type][]') + '=PRESDOCU&conditions' +
-     encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && data.results && data.results.length > 0) {
+            list.innerHTML = data.results.map(function(b) {
+              return '<div style="padding:8px 0; border-top:1px solid #e0e0e0;">' +
+                '<a href="' + escapeHTML(b.html_url) + '" target="_blank" rel="noopener" style="color:#1a0dab; font-weight:bold; text-decoration:none;">' + escapeHTML(b.title) + '</a>' +
+                '<div style="font-size:11px; color:#5f6368; margin-top:2px;">Published: ' + escapeHTML(b.publication_date) + ' • Doc #' + escapeHTML(b.document_number || '') + '</div>' +
+              '</div>';
+            }).join('');
+          } else {
+            list.textContent = 'No new federal actions published in the last 45 days.';
+          }
+        })
+        .catch(function() {
+          const congressUrl = ['https:', '', 'www.congress.gov', 'search'].join('/') + '?q=%7B%22source%22%3A%22legislation%22%2C%22bill-status%22%3A%22law%22%7D';
+          list.innerHTML = 'Live feed paused by browser security. <a href="' + congressUrl + '" target="_blank" rel="noopener" style="color:#1a73e8; font-weight:bold;">View Newly Enacted Laws on Congress.gov ↗</a>';
+        });
+    }
 
-   fetch(url)
-     .then(function(r) { return r.json(); })
-     .then(function(data) {
-       if (data && data.results && data.results.length > 0) {
-         list.innerHTML = data.results.map(function(b) {
-           return '<div style="padding:8px 0; border-top:1px solid #e0e0e0;">' +
-             '<a href="' + escapeHTML(b.html_url) + '" target="_blank" rel="noopener" style="color:#1a0dab; font-weight:bold; text-decoration:none;">' + escapeHTML(b.title) + '</a>' +
-             '<div style="font-size:11px; color:#5f6368; margin-top:2px;">Published: ' + escapeHTML(b.publication_date) + ' • Doc #' + escapeHTML(b.document_number || '') + '</div>' +
-           '</div>';
-         }).join('');
-       } else {
-         list.textContent = 'No new federal actions published in the last 45 days.';
-       }
-     })
-     .catch(function() {
-       const congressUrl = ['https:', '', 'www.congress.gov', 'search'].join('/') + '?q=%7B%22source%22%3A%22legislation%22%2C%22bill-status%22%3A%22law%22%7D';
-       list.innerHTML = 'Live feed paused by browser security. <a href="' + congressUrl + '" target="_blank" rel="noopener" style="color:#1a73e8; font-weight:bold;">View Newly Enacted Laws on Congress.gov ↗</a>';
-     });
- }
-
- setTimeout(loadRecentBills, 300);
-
+    setTimeout(loadRecentBills, 300);
   </script>
 </body>
 </html>
