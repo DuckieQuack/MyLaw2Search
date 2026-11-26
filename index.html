@@ -171,16 +171,15 @@
           ? (cityName + ', ' + stateName + ' Municipal Code')
           : (stateName + ' State & Municipal Statutes');
 
-        const govQ = (currentFilter === 'local' && cityName ? cityName + ' ' : '') +
-          stateName + ' statute OR code "' + query + '" (site:.gov OR site:municode.com OR site:ecode360.com OR site:law.cornell.edu)';
-        const qEncoded = encodeURIComponent(govQ);
-        const stateQuery = encodeURIComponent(stateName + ' ' + query);
-        const localQuery = encodeURIComponent((cityName ? cityName + ' ' : '') + query);
+         const locationPrefix = (currentFilter === 'local' && cityName) ? (cityName + ' ' + stateName) : stateName;
 
-        const googleSearchUrl = ['https://google.com', 'search?q=' + qEncoded].join('/');
-        const cornellUrl = ['https://cornell.edu', 'search', 'site', stateQuery].join('/');
-        const ecodeSearch = encodeURIComponent('site:ecode360.com ' + (cityName ? cityName + ' ' : stateName + ' ') + query);
-        const ecodeUrl = ['https://google.com', 'search?q=' + ecodeSearch].join('/');
+        const govQ = locationPrefix + ' law OR statute ' + query + ' (site:.gov OR site:municode.com OR site:ecode360.com OR site:law.cornell.edu)';
+        const cornellQ = 'site:law.cornell.edu ' + stateName + ' ' + query;
+        const ecodeQ = 'site:ecode360.com ' + locationPrefix + ' ' + query;
+
+        const googleSearchUrl = 'https://google.com' + encodeURIComponent(govQ);
+        const cornellUrl = 'https://google.com' + encodeURIComponent(cornellQ);
+        const ecodeUrl = 'https://google.com' + encodeURIComponent(ecodeQ);
 
         instantHtml +=
           '<div class="card">' +
