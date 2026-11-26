@@ -84,6 +84,29 @@
     let currentFilter = 'all';
     let userCity = '';
     let userState = '';
+          const NY_SENATE_KEY = 'A3vbNaM9sFJ7OJvDrEaeyXw0q7acqZaF';
+
+    function fetchNySenateLaws(query, callback) {
+      const base = ['https:', '', 'legislation.nysenate.gov', 'api', '3', 'laws', 'search'].join('/');
+      const url = base + '?term=' + encodeURIComponent(query) + '&limit=8&key=' + encodeURIComponent(NY_SENATE_KEY);
+
+      fetch(url)
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && data.success && data.result && data.result.items) {
+            callback(data.result.items);
+          } else {
+            callback([]);
+          }
+        })
+        .catch(function() {
+          callback([]);
+        });
+    }
+
 
           const STATE_MAP = {
       "alabama":"Alabama","al":"Alabama","alaska":"Alaska","ak":"Alaska","arizona":"Arizona","az":"Arizona",
@@ -312,7 +335,42 @@
       }
 
       resultsDiv.innerHTML = html;
-    }
+            if (activeState === 'New York' && (currentFilter === 'all' || currentFilter === 'state')) {
+        resultsDiv.insertAdjacentHTML('beforeend', '<div id="nyApiLoading" style="color:#5f6368; font-size:13px; padding:6px 0;">Searching live NY Senate Consolidated Laws (50,000+ sections)...</div>');
+
+        fetchNySenateLaws(topicQuery, function(items) {
+          const loader = document.getElementById('nyApiLoading');
+          if (loader) loader.remove();
+
+          if (!items || items.length === 0) return;
+
+          const subItemsHtml = items.map(function(entry) {
+            const doc = entry.result || entry;
+            const lawId = doc.lawId || '';
+            const lawName = doc.lawName || lawId || 'NY Law';
+            const locationId = doc.locationId || '';
+            const docTitle = doc.title || ('Section ' + locationId);
+            const secUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', lawId, locationId].join('/');
+
+            return '<div class="sub-item">' +
+              '<div style="font-weight:bold; color:#1a73e8; font-size:14px;">' + escapeHTML(lawName) + ' § ' + escapeHTML(locationId) + ' — ' + escapeHTML(docTitle) + '</div>' +
+              '<div style="font-size:12px; color:#5f6368; margin:3px 0 6px 0;">Official NY Consolidated Law (' + escapeHTML(lawId) + ')</div>' +
+              '<a href="' + secUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Read Full Official Section on NYSenate.gov ↗</a>' +
+            '</div>';
+          }).join('');
+
+          const apiCardHtml =
+            '<div class="statute-card" onclick="toggleSubstatutes(\'ny-live-api\')">' +
+              '<div class="card-meta">LIVE NY SENATE OPEN LEGISLATION API • ' + items.length + ' MATCHING SECTIONS</div>' +
+              '<div class="card-title">Live New York Consolidated Laws Matching "' + escapeHTML(topicQuery) + '"</div>' +
+              '<div class="card-text">Pulled directly from the official New York State Senate statutory database.</div>' +
+              '<div id="arrow-ny-live-api" style="font-size:13px; font-weight:bold; color:#1a73e8;">▲ Hide Substatutes (' + items.length + ')</div>' +
+              '<div id="sub-ny-live-api" class="substatute-list open" data-count="' + items.length + '">' + subItemsHtml + '</div>' +
+            '</div>';
+
+          resultsDiv.insertAdjacentHTML('beforeend', apiCardHtml);
+        });
+      }
 
     function loadRecentBills() {
       const list = document.getElementById('recentBillsList');
