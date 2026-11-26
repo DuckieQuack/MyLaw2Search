@@ -215,7 +215,7 @@
           : (stateName + ' State Statutes & Codes');
 
         const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'search', 'legislation'].join('/') + '?term=' + encodeURIComponent(query);
-        const simpleGoogleUrl = ['https:', '', '://google.com', 'search'].join('/') + '?q=' + encodeURIComponent(stateName + ' law ' + query);
+        const justiaUrl = ['https:', '', '://justia.com', 'search'].join('/') + '?query=' + encodeURIComponent(stateName + ' ' + query);
         const municodeUrl = ['https:', '', '://municode.com'].join('/');
 
         allCards.push(
@@ -224,7 +224,7 @@
             '<div class="card-title">' + escapeHTML(scope) + ': "' + escapeHTML(query) + '"</div>' +
             '<div class="card-text">Look up codified state penal laws, vehicle & traffic codes, and local municipal ordinances.</div>' +
             (stateName === 'New York' ? '<a href="' + nySenateUrl + '" rel="noreferrer">NY Senate Laws ↗</a>' : '') +
-            '<a href="' + simpleGoogleUrl + '" rel="noreferrer">Google Law Lookup ↗</a>' +
+            '<a href="' + justiaUrl + '" rel="noreferrer">Justia Statutory Lookup ↗</a>' +
             '<a href="' + municodeUrl + '" rel="noreferrer">Municode Library ↗</a>' +
           '</div>'
         );
