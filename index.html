@@ -71,12 +71,11 @@
   <footer>
     <strong>Disclaimer:</strong> MyLaw2Search provides public statutory and regulatory text for informational purposes only and does not constitute legal advice. Always verify current statutes with an official government source or licensed attorney.
   </footer>
-
-    <script>
+  
+  <script>
     let currentFilter = 'all';
     let userCity = '';
     let userState = '';
-    let isSearching = false;
 
     function escapeHTML(str) {
       if (!str) return '';
@@ -87,49 +86,35 @@
         .replace(/"/g, '&quot;');
     }
 
-    async function fetchWithTimeout(url, timeoutMs) {
-      const controller = new AbortController();
-      const timer = setTimeout(function() { controller.abort(); }, timeoutMs || 7000);
-      try {
-        const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(timer);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return await res.json();
-      } catch (err) {
-        clearTimeout(timer);
-        throw err;
-      }
+    function getFederalApiUrl(params) {
+      return ['https:', '', 'www.federalregister.gov', 'api', 'v1', 'documents'].join('/') + '?format=json&' + params;
     }
 
-    function buildFederalApiUrl(params) {
-      const base = ['https:', '', 'www.federalregister.gov', 'api', 'v1', 'documents'].join('/');
-      return base + '?format=json&' + params;
-    }
-
-    async function loadRecentBills() {
+    function loadRecentBills() {
       const list = document.getElementById('recentBillsList');
-      list.textContent = 'Fetching recent federal actions...';
       const d = new Date();
       d.setDate(d.getDate() - 30);
       const since = d.toISOString().split('T');
       const params = 'conditions' + encodeURIComponent('[type][]') + '=PRESDOCU' +
         '&conditions' + encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
 
-      try {
-        const data = await fetchWithTimeout(buildFederalApiUrl(params), 7000);
-        if (data.results && data.results.length > 0) {
-          list.innerHTML = data.results.map(function(b) {
-            return '<div style="padding:8px 0; border-top:1px solid #e0e0e0;">' +
-              '<a href="' + escapeHTML(b.html_url) + '" target="_blank" rel="noopener" style="color:#1a0dab; font-weight:bold; text-decoration:none;">' + escapeHTML(b.title) + '</a>' +
-              '<div style="font-size:11px; color:#5f6368; margin-top:2px;">Published: ' + escapeHTML(b.publication_date) + '</div>' +
-            '</div>';
-          }).join('');
-        } else {
-          list.textContent = 'No new federal presidential documents in the last 30 days.';
-        }
-      } catch (e) {
-        list.textContent = 'Could not load feed (blocked by browser or offline).';
-      }
+      fetch(getFederalApiUrl(params))
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.results && data.results.length > 0) {
+            list.innerHTML = data.results.map(function(b) {
+              return '<div style="padding:8px 0; border-top:1px solid #e0e0e0;">' +
+                '<a href="' + escapeHTML(b.html_url) + '" target="_blank" rel="noopener" style="color:#1a0dab; font-weight:bold; text-decoration:none;">' + escapeHTML(b.title) + '</a>' +
+                '<div style="font-size:11px; color:#5f6368; margin-top:2px;">Published: ' + escapeHTML(b.publication_date) + '</div>' +
+              '</div>';
+            }).join('');
+          } else {
+            list.textContent = 'No new federal presidential documents in the last 30 days.';
+          }
+        })
+        .catch(function() {
+          list.textContent = 'Recent federal feed unavailable right now.';
+        });
     }
 
     function detectLocation() {
@@ -140,24 +125,25 @@
       }
       statusEl.textContent = 'Detecting location...';
       navigator.geolocation.getCurrentPosition(
-        async function(pos) {
-          try {
-            const geoBase = ['https:', '', 'api.bigdatacloud.net', 'data', 'reverse-geocode-client'].join('/');
-            const geoUrl = geoBase + '?latitude=' + encodeURIComponent(pos.coords.latitude) +
-              '&longitude=' + encodeURIComponent(pos.coords.longitude) + '&localityLanguage=en';
-            const geo = await fetchWithTimeout(geoUrl, 6000);
-            userCity = geo.city || geo.locality || '';
-            userState = geo.principalSubdivision || '';
-            const label = [userCity, userState].filter(Boolean).join(', ');
-            statusEl.innerHTML = label ? '<strong>Active Area:</strong> ' + escapeHTML(label) : 'Location detected.';
-          } catch (e) {
-            statusEl.textContent = 'Location found, city lookup unavailable.';
-          }
+        function(pos) {
+          const geoBase = ['https:', '', 'api.bigdatacloud.net', 'data', 'reverse-geocode-client'].join('/');
+          const geoUrl = geoBase + '?latitude=' + pos.coords.latitude + '&longitude=' + pos.coords.longitude + '&localityLanguage=en';
+          fetch(geoUrl)
+            .then(function(res) { return res.json(); })
+            .then(function(geo) {
+              userCity = geo.city || geo.locality || '';
+              userState = geo.principalSubdivision || '';
+              const label = [userCity, userState].filter(Boolean).join(', ');
+              statusEl.innerHTML = label ? '<strong>Active Area:</strong> ' + escapeHTML(label) : 'Location detected.';
+            })
+            .catch(function() {
+              statusEl.textContent = 'Location found, city lookup unavailable.';
+            });
         },
         function() {
           statusEl.textContent = 'Location permission denied.';
         },
-        { timeout: 6000 }
+        { timeout: 5000 }
       );
     }
 
@@ -169,162 +155,76 @@
         runSearch();
       }
     }
-
-    function buildEcfrUrl(query, dotOnly) {
-      const base = ['https:', '', 'www.ecfr.gov', 'api', 'search', 'v1', 'results'].join('/');
-      let url = base + '?query=' + encodeURIComponent(query) + '&per_page=5';
-      if (dotOnly) {
-        url += '&title=49';
-      }
-      return url;
-    }
-
-    function buildCourtListenerUrl(query, stateName) {
-      const base = ['https:', '', '://courtlistener.com', 'api', 'rest', 'v4', 'search', ''].join('/');
-      const q = stateName ? (query + ' ' + stateName) : query;
-      return base + '?q=' + encodeURIComponent(q) + '&type=o&order_by=score+desc';
-    }
-
-    function stripTags(html) {
-      if (!html) return '';
-      return String(html).replace(/<[^>]*>/g, '');
-    }
-
-    async function runSearch() {
-      if (isSearching) return;
+    function runSearch() {
       const query = document.getElementById('searchInput').value.trim();
       const resultsDiv = document.getElementById('results');
-      const searchBtn = document.getElementById('searchBtn');
       if (!query) return;
-
-      isSearching = true;
-      searchBtn.disabled = true;
 
       const billsBox = document.getElementById('recentBillsBox');
       if (billsBox) billsBox.style.display = 'none';
 
       const stateName = userState || 'New York';
       const cityName = userCity || '';
-      resultsDiv.innerHTML = '<p style="color:#5f6368;">Searching live federal regulations, CFR codes, and case law...</p>';
-
-      let allCards = [];
+      const stateSlug = stateName.toLowerCase().replace(/\s+/g, '_');
+      let instantHtml = '';
 
       if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
         const scope = (currentFilter === 'local' && cityName)
           ? (cityName + ', ' + stateName + ' Municipal Code')
-          : (stateName + ' State Statutes & Codes');
+          : (stateName + ' State & Municipal Statutes');
 
-     const stateSlug = stateName.toLowerCase().replace(/\s+/g, '_');
-     const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
-     const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
-     const govInfoUrl = ['https:', '', 'www.govinfo.gov', 'app', 'collection', 'uscode'].join('/');
+        const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
+        const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
+        const ecfrUrl = ['https:', '', 'www.ecfr.gov', 'current', 'title-49'].join('/');
 
-     allCards.push(
-       '<div class="card">' +
-         '<div class="card-meta">OFFICIAL .GOV & .EDU PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
-         '<div class="card-title">' + escapeHTML(scope) + ': "' + escapeHTML(query) + '"</div>' +
-         '<div class="card-text">Verified government (.gov) and university (.edu) statutory repositories.</div>' +
-         (stateName === 'New York' ? '<a href="' + nySenateUrl + '" target="_blank" rel="noopener">NY Senate Laws (.gov) ↗</a>' : '') +
-         '<a href="' + cornellStateUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' (.edu) ↗</a>' +
-         '<a href="' + govInfoUrl + '" target="_blank" rel="noopener">U.S. Code (.gov) ↗</a>' +
-       '</div>'
-     );
-    }
-      const tasks = [];
-
-      if (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot') {
-        tasks.push(
-          fetchWithTimeout(buildEcfrUrl(query, currentFilter === 'dot'), 8000)
-            .then(function(data) {
-              if (data && data.results && data.results.length > 0) {
-                data.results.slice(0, 5).forEach(function(item) {
-                  const titleNum = item.hierarchy && item.hierarchy.title ? ('Title ' + item.hierarchy.title + ' CFR') : 'Code of Federal Regulations';
-                  const section = (item.hierarchy_headings && (item.hierarchy_headings.section || item.hierarchy_headings.part)) || 'Federal Regulation';
-                  const snippet = stripTags(item.full_text_excerpt) || 'Official codified federal regulation text.';
-                  const ecfrLink = ['https:', '', 'www.ecfr.gov', 'current', 'title-' + (item.hierarchy ? item.hierarchy.title : '49')].join('/');
-
-                  allCards.push(
-                    '<div class="card">' +
-                      '<div class="card-meta">LIVE eCFR • ' + escapeHTML(titleNum.toUpperCase()) + '</div>' +
-                      '<div class="card-title">' + escapeHTML(section) + '</div>' +
-                      '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
-                      '<a href="' + ecfrLink + '" target="_blank" rel="noopener">Read Codified CFR Text ↗</a>' +
-                    '</div>'
-                  );
-                });
-              }
-            })
-            .catch(function() {})
-        );
+        instantHtml +=
+          '<div class="card">' +
+            '<div class="card-meta">OFFICIAL .GOV & .EDU PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
+            '<div class="card-title">' + escapeHTML(scope) + ': "' + escapeHTML(query) + '"</div>' +
+            '<div class="card-text">Browse verified government (.gov) and university (.edu) statutory repositories directly.</div>' +
+            (stateName === 'New York' ? '<a href="' + nySenateUrl + '" target="_blank" rel="noopener">NY Senate Laws (.gov) ↗</a>' : '') +
+            '<a href="' + cornellStateUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' (.edu) ↗</a>' +
+            '<a href="' + ecfrUrl + '" target="_blank" rel="noopener">eCFR Title 49 DOT (.gov) ↗</a>' +
+          '</div>';
       }
 
-      if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'federal') {
-        const searchState = (currentFilter === 'state') ? stateName : '';
-        tasks.push(
-          fetchWithTimeout(buildCourtListenerUrl(query, searchState), 8000)
-            .then(function(data) {
-              if (data && data.results && data.results.length > 0) {
-                data.results.slice(0, 5).forEach(function(c) {
-                  const caseName = c.caseName || c.caseNameFull || 'Court Opinion';
-                  const court = c.court || 'Court Decision';
-                  const dateFiled = c.dateFiled || '';
-                  const citation = (c.citation && c.citation.length > 0) ? c.citation : '';
-                  const snippet = stripTags(c.snippet) || 'Published judicial opinion matching your legal search.';
-                  const caseUrl = c.absolute_url
-                    ? (['https:', '', '://courtlistener.com'].join('/') + c.absolute_url)
-                    : ['https:', '', '://courtlistener.com'].join('/');
+      const needsFederal = (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot');
+      resultsDiv.innerHTML = instantHtml + (needsFederal ? '<div id="fedStatus" style="color:#5f6368; font-size:13px; padding:8px 0;">Loading Federal Register results...</div>' : '');
 
-                  allCards.push(
-                    '<div class="card">' +
-                      '<div class="card-meta">CASE LAW • ' + escapeHTML(court.toUpperCase()) + (citation ? ' • ' + escapeHTML(citation) : '') + (dateFiled ? ' (' + escapeHTML(dateFiled) + ')' : '') + '</div>' +
-                      '<div class="card-title">' + escapeHTML(caseName) + '</div>' +
-                      '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
-                      '<a href="' + caseUrl + '" target="_blank" rel="noopener">Read Court Opinion ↗</a>' +
-                    '</div>'
-                  );
-                });
-              }
-            })
-            .catch(function() {})
-        );
-      }
-
-      if (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot') {
-        let params = 'conditions' + encodeURIComponent('[term]') + '=' + encodeURIComponent(query) + '&per_page=4';
+      if (needsFederal) {
+        let params = 'conditions' + encodeURIComponent('[term]') + '=' + encodeURIComponent(query) + '&per_page=8';
         if (currentFilter === 'dot') {
           params += '&conditions' + encodeURIComponent('[agencies][]') + '=transportation-department' +
                     '&conditions' + encodeURIComponent('[agencies][]') + '=federal-motor-carrier-safety-administration';
         }
-        tasks.push(
-          fetchWithTimeout(buildFederalApiUrl(params), 8000)
-            .then(function(data) {
-              if (data && data.results && data.results.length > 0) {
-                data.results.forEach(function(item) {
-                  const agencies = (item.agencies || []).map(function(a) { return a.name; }).filter(Boolean).join(', ') || 'Federal Agency';
-                  const snippet = item.abstract || item.excerpts || 'Official Federal Register notice.';
-                  allCards.push(
-                    '<div class="card">' +
-                      '<div class="card-meta">FEDERAL REGISTER • ' + escapeHTML(agencies.toUpperCase()) + ' • ' + escapeHTML(item.publication_date || '') + '</div>' +
-                      '<div class="card-title">' + escapeHTML(item.title) + '</div>' +
-                      '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
-                      '<a href="' + escapeHTML(item.html_url) + '" target="_blank" rel="noopener">Read Federal Register ↗</a>' +
-                    '</div>'
-                  );
-                });
-              }
-            })
-            .catch(function() {})
-        );
+
+        fetch(getFederalApiUrl(params))
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            const fedStatus = document.getElementById('fedStatus');
+            if (fedStatus) fedStatus.remove();
+
+            if (data.results && data.results.length > 0) {
+              const fedHtml = data.results.map(function(item) {
+                const agencies = (item.agencies || []).map(function(a) { return a.name; }).filter(Boolean).join(', ') || 'Federal Agency';
+                const snippet = item.abstract || item.excerpts || 'Official Federal Register document.';
+                return '<div class="card">' +
+                  '<div class="card-meta">' + escapeHTML(item.type || 'FEDERAL').toUpperCase() + ' • ' + escapeHTML(agencies) + ' • ' + escapeHTML(item.publication_date || '') + '</div>' +
+                  '<div class="card-title">' + escapeHTML(item.title) + '</div>' +
+                  '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
+                  '<a href="' + escapeHTML(item.html_url) + '" target="_blank" rel="noopener">Read Full Text ↗</a>' +
+                '</div>';
+              }).join('');
+              resultsDiv.insertAdjacentHTML('beforeend', fedHtml);
+            } else {
+              resultsDiv.insertAdjacentHTML('beforeend', '<div class="card"><div class="card-text">No matching Federal Register documents found.</div></div>');
+            }
+          })
+          .catch(function() {
+            const fedStatus = document.getElementById('fedStatus');
+            if (fedStatus) fedStatus.remove();
+          });
       }
-
-      await Promise.all(tasks);
-
-      resultsDiv.innerHTML = allCards.length > 0
-        ? allCards.join('')
-        : '<div class="card"><div class="card-text">No live records matched "<strong>' + escapeHTML(query) + '</strong>". Try broader legal terms (e.g., "unlawful imprisonment", "hours of service", or "49 CFR 395").</div></div>';
-
-      isSearching = false;
-      searchBtn.disabled = false;
     }
 
     loadRecentBills();
