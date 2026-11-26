@@ -228,7 +228,7 @@
         } catch (err) {
           const fedStatus = document.getElementById('fedStatus');
           if (fedStatus) fedStatus.remove();
-          const frSearchUrl = 'https://federalregister.gov' + encodeURIComponent(query);
+         const frSearchUrl = 'https://federalregister.gov' + encodeURIComponent(query);
           resultsDiv.insertAdjacentHTML('beforeend',
             '<div class="card">' +
               '<div class="card-meta" style="color:#d93025;">FEDERAL API DELAYED</div>' +
@@ -242,7 +242,7 @@
       isSearching = false;
       searchBtn.disabled = false;
     }
-
+  loadRecentBills();
   </script>
 </body>
 </html>
