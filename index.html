@@ -103,28 +103,7 @@
       "west virginia":"West Virginia","wv":"West Virginia","wisconsin":"Wisconsin","wi":"Wisconsin","wyoming":"Wyoming","wy":"Wyoming"
     };
 
-    function detectStateFromQuery(rawQuery) {
-      const lower = rawQuery.toLowerCase();
-      // Check two-word state names first (e.g., "new york", "north carolina")
-      const twoWordStates = ["new hampshire","new jersey","new mexico","new york","north carolina","north dakota","rhode island","south carolina","south dakota","west virginia"];
-      for (let i = 0; i < twoWordStates.length; i++) {
-        const st = twoWordStates[i];
-        const regex = new RegExp('\\b' + st + '\\b', 'i');
-                  return { detectedState: STATE_MAP[st], cleanedQuery: rawQuery.replace(regex, '').trim() };
-        }
-      }
-      const tokens = lower.split(/\s+/);
-      for (let j = 0; j < tokens.length; j++) {
-        const cleanTok = tokens[j].replace(/[^a-z]/g, '');
-        if (STATE_MAP[cleanTok] && cleanTok !== 'in' && cleanTok !== 'or' && cleanTok !== 'me' && cleanTok !== 'hi' && cleanTok !== 'ok') {
-          const rx = new RegExp('\\b' + cleanTok + '\\b', 'i');
-          return { detectedState: STATE_MAP[cleanTok], cleanedQuery: rawQuery.replace(rx, '').trim() };
-        }
-      }
-      return { detectedState: '', cleanedQuery: rawQuery };
-    }
-
-    function nyLawUrl(lawCode, section) {
+        function nyLawUrl(lawCode, section) {
       return ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', lawCode, section].join('/');
     }
 
@@ -156,9 +135,9 @@
         keywords: 'holding someone against their will unlawful imprisonment kidnapping restraint abduction coercion 135',
         summary: 'Covers offenses involving unlawful restraint, abduction, and holding a person against their will.',
         substatutes: [
-          { sec: 'PL § 135.05', name: 'Unlawful Imprisonment in the Second Degree', desc: 'A person is guilty when he or she knowingly restrains another person without consent (Class A Misdemeanor).', url: nyLawUrl('PEN', '135.05') },
-          { sec: 'PL § 135.10', name: 'Unlawful Imprisonment in the First Degree', desc: 'Restraining another person under circumstances which expose the latter to a risk of serious physical injury (Class E Felony).', url: nyLawUrl('PEN', '135.10') },
-          { sec: 'PL § 135.20', name: 'Kidnapping in the Second Degree', desc: 'Abducting another person with intent to prevent liberation by secreting or using deadly physical force (Class B Felony).', url: nyLawUrl('PEN', '135.20') }
+          { sec: 'PL § 135.05', name: 'Unlawful Imprisonment in the Second Degree', desc: 'Knowingly restraining another person without consent (Class A Misdemeanor).', url: nyLawUrl('PEN', '135.05') },
+          { sec: 'PL § 135.10', name: 'Unlawful Imprisonment in the First Degree', desc: 'Restraining another person under circumstances exposing them to risk of serious physical injury (Class E Felony).', url: nyLawUrl('PEN', '135.10') },
+          { sec: 'PL § 135.20', name: 'Kidnapping in the Second Degree', desc: 'Abducting another person with intent to prevent liberation (Class B Felony).', url: nyLawUrl('PEN', '135.20') }
         ]
       },
       {
@@ -167,42 +146,11 @@
         jurisdiction: 'New York Penal Law',
         code: 'NY Penal Law Article 205',
         title: 'Resisting Arrest, Escape & Obstruction of Governmental Administration',
-        keywords: 'resisting arrest obstruction police officer handcuff escape custody hindering prosecution 205 195',
+        keywords: 'resisting arrest obstruction police officer handcuff escape custody 205 195',
         summary: 'Governs resisting a lawful arrest, obstructing police/public servants, and escaping from custody.',
         substatutes: [
-          { sec: 'PL § 205.30', name: 'Resisting Arrest', desc: 'Intentionally preventing or attempting to prevent a police officer or peace officer from effecting an authorized arrest (Class A Misdemeanor).', url: nyLawUrl('PEN', '205.30') },
-          { sec: 'PL § 195.05', name: 'Obstructing Governmental Administration (2nd Degree)', desc: 'Intentionally obstructing, impairing, or perverting the administration of law or preventing a public servant from performing an official function (Class A Misdemeanor).', url: nyLawUrl('PEN', '195.05') },
-          { sec: 'PL § 205.05', name: 'Escape in the Third Degree', desc: 'Escaping from custody after being arrested or detained by a peace officer or police officer (Class A Misdemeanor).', url: nyLawUrl('PEN', '205.05') }
-        ]
-      }
-    ];
-    STATUTE_TREE.push(
-      {
-        id: 'ny-penal-120',
-        category: 'state',
-        jurisdiction: 'New York Penal Law',
-        code: 'NY Penal Law Article 120',
-        title: 'Assault, Menacing & Reckless Endangerment',
-        keywords: 'assault battery fight injury menacing reckless endangerment weapon strangulation 120',
-        summary: 'Defines misdemeanor and felony assault, physical injury, menacing, and reckless endangerment offenses.',
-        substatutes: [
-          { sec: 'PL § 120.00', name: 'Assault in the Third Degree', desc: 'Intentionally or recklessly causing physical injury to another person (Class A Misdemeanor).', url: nyLawUrl('PEN', '120.00') },
-          { sec: 'PL § 120.05', name: 'Assault in the Second Degree', desc: 'Causing serious physical injury, injury with a deadly weapon/dangerous instrument, or injury to a police/peace officer (Class D Felony).', url: nyLawUrl('PEN', '120.05') },
-          { sec: 'PL § 120.14', name: 'Menacing in the Second Degree', desc: 'Intentionally placing another person in reasonable fear of physical injury by displaying a deadly weapon or dangerous instrument (Class A Misdemeanor).', url: nyLawUrl('PEN', '120.14') }
-        ]
-      },
-      {
-        id: 'ny-vtl-1192',
-        category: 'state',
-        jurisdiction: 'New York Vehicle & Traffic Law',
-        code: 'NY VTL § 1192',
-        title: 'Driving While Intoxicated (DWI / DWAI Alcohol & Drugs)',
-        keywords: 'dwi dui drunk driving intoxicated bac breathalyzer alcohol drugs impaired 1192',
-        summary: 'New York laws prohibiting operating a motor vehicle while impaired or intoxicated by alcohol or drugs.',
-        substatutes: [
-          { sec: 'VTL § 1192(1)', name: 'Driving While Ability Impaired (DWAI)', desc: 'Operating a motor vehicle while ability is impaired by alcohol (BAC .05% to .07%; Traffic Infraction).', url: nyLawUrl('VAT', '1192') },
-          { sec: 'VTL § 1192(2)', name: 'Driving While Intoxicated (Per Se)', desc: 'Operating a motor vehicle with a Blood Alcohol Concentration (BAC) of .08% or higher (Misdemeanor).', url: nyLawUrl('VAT', '1192') },
-          { sec: 'VTL § 1192(2-a)', name: 'Aggravated DWI', desc: 'Operating a vehicle with a BAC of .18% or higher, or with a child under 16 in the vehicle (Leandra’s Law).', url: nyLawUrl('VAT', '1192') }
+          { sec: 'PL § 205.30', name: 'Resisting Arrest', desc: 'Intentionally preventing or attempting to prevent a police or peace officer from effecting an authorized arrest (Class A Misdemeanor).', url: nyLawUrl('PEN', '205.30') },
+          { sec: 'PL § 195.05', name: 'Obstructing Governmental Administration (2nd Degree)', desc: 'Intentionally obstructing or preventing a public servant from performing an official function (Class A Misdemeanor).', url: nyLawUrl('PEN', '195.05') }
         ]
       },
       {
@@ -215,21 +163,36 @@
         summary: 'Federal driving time limits, mandatory rest breaks, and Electronic Logging Device (ELD) rules for commercial drivers.',
         substatutes: [
           { sec: '49 CFR § 395.3', name: 'Maximum Driving Time for Property-Carrying Vehicles', desc: '11-hour driving limit after 10 consecutive hours off duty; 14-hour on-duty window; 30-minute break requirement.', url: ecfrSecUrl('49', '395', '395.3') },
-          { sec: '49 CFR § 395.8', name: 'Driver’s Record of Duty Status (RODS)', desc: 'Requires commercial motor vehicle drivers to record their duty status for each 24-hour period.', url: ecfrSecUrl('49', '395', '395.8') },
-          { sec: '49 CFR § 395.22', name: 'Motor Carrier Responsibilities — ELD', desc: 'Mandates certified Electronic Logging Devices (ELDs) and technical transfer standards during roadside inspections.', url: ecfrSecUrl('49', '395', '395.22') }
+          { sec: '49 CFR § 395.8', name: 'Driver’s Record of Duty Status (RODS)', desc: 'Requires commercial motor vehicle drivers to record their duty status for each 24-hour period.', url: ecfrSecUrl('49', '395', '395.8') }
         ]
       }
-    );
+    ];
 
     function escapeHTML(str) {
       if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    function detectStateFromQuery(rawQuery) {
+      const lower = rawQuery.toLowerCase();
+      const twoWord = ["new hampshire","new jersey","new mexico","new york","north carolina","north dakota","rhode island","south carolina","south dakota","west virginia"];
+      for (let i = 0; i < twoWord.length; i++) {
+        const st = twoWord[i];
+        const rx = new RegExp('\\b' + st + '\\b', 'i');
+        if (rx.test(lower)) {
+          return { detectedState: STATE_MAP[st], cleanedQuery: rawQuery.replace(rx, '').trim() };
+        }
+      }
+      const tokens = lower.split(/\s+/);
+      for (let j = 0; j < tokens.length; j++) {
+        const tok = tokens[j].replace(/[^a-z]/g, '');
+        if (STATE_MAP[tok] && tok !== 'in' && tok !== 'or' && tok !== 'me' && tok !== 'hi' && tok !== 'ok') {
+          const rx2 = new RegExp('\\b' + tok + '\\b', 'i');
+          return { detectedState: STATE_MAP[tok], cleanedQuery: rawQuery.replace(rx2, '').trim() };
+        }
+      }
+      return { detectedState: '', cleanedQuery: rawQuery };
+    }
     function toggleSubstatutes(id) {
       const el = document.getElementById('sub-' + id);
       const arrow = document.getElementById('arrow-' + id);
@@ -246,6 +209,7 @@
         runSearch();
       }
     }
+
     function detectLocation() {
       const statusEl = document.getElementById('locationStatus');
       if (!navigator.geolocation) {
@@ -303,26 +267,20 @@
 
       if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
         const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
-        const cornellSearchUrl = ['https:', '', 'www.law.cornell.edu', 'search', 'site', encodeURIComponent(activeState + ' ' + topicQuery)].join('/');
         const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
         const stateCardId = 'state-portal-' + stateHyphen;
 
         html +=
           '<div class="statute-card" onclick="toggleSubstatutes(\'' + stateCardId + '\')">' +
             '<div class="card-meta">' + escapeHTML(activeState.toUpperCase()) + ' STATUTES & CODES • AUTO-DETECTED JURISDICTION</div>' +
-            '<div class="card-title">' + escapeHTML(activeState) + ' Laws for "' + escapeHTML(topicQuery) + '"</div>' +
+            '<div class="card-title">' + escapeHTML(activeState) + ' Statutory Repositories for "' + escapeHTML(topicQuery) + '"</div>' +
             '<div class="card-text">Official codified statutes, penal codes, and vehicle regulations for ' + escapeHTML(activeState) + '.</div>' +
-            '<div id="arrow-' + stateCardId + '" style="font-size:13px; font-weight:bold; color:#1a73e8;">▼ Click to View ' + escapeHTML(activeState) + ' Statutory Sub-Portals</div>' +
+            '<div id="arrow-' + stateCardId + '" style="font-size:13px; font-weight:bold; color:#1a73e8;">▲ Hide Sub-Portals</div>' +
             '<div id="sub-' + stateCardId + '" class="substatute-list open" data-count="2">' +
               '<div class="sub-item">' +
                 '<div style="font-weight:bold; color:#1a73e8; font-size:14px;">Cornell LII — ' + escapeHTML(activeState) + ' Annotated Statutes (.edu)</div>' +
                 '<div style="font-size:13px; color:#3c4043; margin:4px 0 6px 0;">Browse full state statutory titles, penal codes, and court rules for ' + escapeHTML(activeState) + '.</div>' +
                 '<a href="' + cornellStateUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open ' + escapeHTML(activeState) + ' Code Index ↗</a>' +
-              '</div>' +
-              '<div class="sub-item">' +
-                '<div style="font-weight:bold; color:#1a73e8; font-size:14px;">Search "' + escapeHTML(topicQuery) + '" in ' + escapeHTML(activeState) + ' Statutes</div>' +
-                '<div style="font-size:13px; color:#3c4043; margin:4px 0 6px 0;">Targeted statutory lookup across ' + escapeHTML(activeState) + ' legal repositories.</div>' +
-                '<a href="' + cornellSearchUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Search ' + escapeHTML(activeState) + ' Statutes ↗</a>' +
               '</div>' +
               (activeState === 'New York'
                 ? '<div class="sub-item"><div style="font-weight:bold; color:#1a73e8; font-size:14px;">New York State Senate Open Legislation (.gov)</div><div style="font-size:13px; color:#3c4043; margin:4px 0 6px 0;">Official consolidated NY Penal Law, VTL, CPL, and municipal laws.</div><a href="' + nySenateUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Browse NY Consolidated Laws ↗</a></div>'
@@ -354,7 +312,7 @@
       resultsDiv.innerHTML = html;
     }
 
-        function loadRecentBills() {
+    function loadRecentBills() {
       const list = document.getElementById('recentBillsList');
       if (!list) return;
       const congressLaws = ['https:', '', 'www.congress.gov', 'public-laws', '119th-congress'].join('/');
