@@ -179,9 +179,8 @@
 
         const googleSearchUrl = ['https://google.com', 'search?q=' + qEncoded].join('/');
         const cornellUrl = ['https://cornell.edu', 'search', 'site', stateQuery].join('/');
-        const ecodeUrl = ['https://ecode360.com', 'search?query=' + localQuery].join('/');
-
-
+        const ecodeSearch = encodeURIComponent('site:ecode360.com ' + (cityName ? cityName + ' ' : stateName + ' ') + query);
+        const ecodeUrl = ['https://google.com', 'search?q=' + ecodeSearch].join('/');
 
         instantHtml +=
           '<div class="card">' +
