@@ -78,12 +78,19 @@
     <strong>Disclaimer:</strong> MyLaw2Search provides public statutory and regulatory text for informational purposes only and does not constitute legal advice. Always verify current statutes with an official government source or licensed attorney.
   </footer>
   
-  <script>
+    <script>
     let currentFilter = 'all';
     let userCity = '';
     let userState = '';
 
-    // Structured Statute -> Substatute Database (Expandable anytime!)
+    function nyLawUrl(lawCode, section) {
+      return ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', lawCode, section].join('/');
+    }
+
+    function ecfrSecUrl(title, part, section) {
+      return ['https:', '', 'www.ecfr.gov', 'current', 'title-' + title, 'part-' + part, 'section-' + section].join('/');
+    }
+
     const STATUTE_TREE = [
       {
         id: 'ny-vtl-30',
@@ -94,9 +101,9 @@
         keywords: 'speeding street racing drag race contest reckless driving traffic ticket vtl 1180 1182',
         summary: 'Governs maximum speed limits, speed contests, drag races, and reckless operation on public highways.',
         substatutes: [
-          { sec: 'VTL § 1180', name: 'Basic Rule and Maximum Speed Limits', desc: 'Prohibits driving at a speed greater than is reasonable and prudent under existing conditions or exceeding posted limits.', url: 'https://nysenate.gov' },
-          { sec: 'VTL § 1182', name: 'Speed Contests and Races (Illegal Street Racing)', desc: 'Prohibits unauthorized speed contests, drag races, or exhibitions of speed on any highway; misdemeanor offense.', url: 'https://nysenate.gov' },
-          { sec: 'VTL § 1212', name: 'Reckless Driving', desc: 'Defines reckless driving as operating a vehicle in a manner that unreasonably interferes with free and proper use of the public highway.', url: 'https://nysenate.gov' }
+          { sec: 'VTL § 1180', name: 'Basic Rule and Maximum Speed Limits', desc: 'Prohibits driving at a speed greater than is reasonable and prudent under existing conditions or exceeding posted limits.', url: nyLawUrl('VAT', '1180') },
+          { sec: 'VTL § 1182', name: 'Speed Contests and Races (Illegal Street Racing)', desc: 'Prohibits unauthorized speed contests, drag races, or exhibitions of speed on any highway; misdemeanor offense.', url: nyLawUrl('VAT', '1182') },
+          { sec: 'VTL § 1212', name: 'Reckless Driving', desc: 'Defines reckless driving as operating a vehicle in a manner that unreasonably interferes with free and proper use of the public highway.', url: nyLawUrl('VAT', '1212') }
         ]
       },
       {
@@ -108,11 +115,14 @@
         keywords: 'holding someone against their will unlawful imprisonment kidnapping restraint abduction coercion 135',
         summary: 'Covers offenses involving unlawful restraint, abduction, and holding a person against their will.',
         substatutes: [
-          { sec: 'PL § 135.05', name: 'Unlawful Imprisonment in the Second Degree', desc: 'A person is guilty when he or she knowingly restrains another person without consent (Class A Misdemeanor).', url: 'https://nysenate.gov' },
-          { sec: 'PL § 135.10', name: 'Unlawful Imprisonment in the First Degree', desc: 'Restraining another person under circumstances which expose the latter to a risk of serious physical injury (Class E Felony).', url: 'https://nysenate.gov' },
-          { sec: 'PL § 135.20', name: 'Kidnapping in the Second Degree', desc: 'Abducting another person with intent to prevent liberation by secreting or using deadly physical force (Class B Felony).', url: 'https://nysenate.gov' }
+          { sec: 'PL § 135.05', name: 'Unlawful Imprisonment in the Second Degree', desc: 'A person is guilty when he or she knowingly restrains another person without consent (Class A Misdemeanor).', url: nyLawUrl('PEN', '135.05') },
+          { sec: 'PL § 135.10', name: 'Unlawful Imprisonment in the First Degree', desc: 'Restraining another person under circumstances which expose the latter to a risk of serious physical injury (Class E Felony).', url: nyLawUrl('PEN', '135.10') },
+          { sec: 'PL § 135.20', name: 'Kidnapping in the Second Degree', desc: 'Abducting another person with intent to prevent liberation by secreting or using deadly physical force (Class B Felony).', url: nyLawUrl('PEN', '135.20') }
         ]
-      },
+      }
+    ];
+
+          STATUTE_TREE.push(
       {
         id: 'dot-49cfr-395',
         category: 'dot',
@@ -122,9 +132,9 @@
         keywords: 'dot fmcsa hours of service hos eld logbook driving limit 11 hour 14 hour 395 trucking cdl',
         summary: 'Federal driving time limits, mandatory rest breaks, and Electronic Logging Device (ELD) rules for commercial drivers.',
         substatutes: [
-          { sec: '49 CFR § 395.3', name: 'Maximum Driving Time for Property-Carrying Vehicles', desc: '11-hour driving limit after 10 consecutive hours off duty; 14-hour on-duty window; 30-minute break requirement.', url: 'https://ecfr.gov' },
-          { sec: '49 CFR § 395.8', name: 'Driver’s Record of Duty Status (RODS)', desc: 'Requires commercial motor vehicle drivers to record their duty status for each 24-hour period.', url: 'https://ecfr.gov' },
-          { sec: '49 CFR § 395.22', name: 'Motor Carrier Responsibilities — ELD', desc: 'Mandates certified Electronic Logging Devices (ELDs) and technical transfer standards during roadside inspections.', url: 'https://ecfr.gov' }
+          { sec: '49 CFR § 395.3', name: 'Maximum Driving Time for Property-Carrying Vehicles', desc: '11-hour driving limit after 10 consecutive hours off duty; 14-hour on-duty window; 30-minute break requirement.', url: ecfrSecUrl('49', '395', '395.3') },
+          { sec: '49 CFR § 395.8', name: 'Driver’s Record of Duty Status (RODS)', desc: 'Requires commercial motor vehicle drivers to record their duty status for each 24-hour period.', url: ecfrSecUrl('49', '395', '395.8') },
+          { sec: '49 CFR § 395.22', name: 'Motor Carrier Responsibilities — ELD', desc: 'Mandates certified Electronic Logging Devices (ELDs) and technical transfer standards during roadside inspections.', url: ecfrSecUrl('49', '395', '395.22') }
         ]
       },
       {
@@ -132,16 +142,17 @@
         category: 'dot',
         jurisdiction: 'Federal Motor Carrier Safety Regulations (DOT / FMCSA)',
         code: '49 CFR Part 392',
-        title: 'Driving of Commercial Motor Vehicles (Safety, Radar Detectors, Phones)',
+        title: 'Driving of Commercial Motor Vehicles (Safety, Phones & Traffic Compliance)',
         keywords: 'dot commercial vehicle phone texting radar detector alcohol drugs speeding 392 cdl',
         summary: 'Federal operational rules for CMV drivers including distracted driving, substance prohibitions, and traffic law compliance.',
         substatutes: [
-          { sec: '49 CFR § 392.2', name: 'Applicable Operating Rules', desc: 'Every commercial motor vehicle must be operated in accordance with the laws, ordinances, and regulations of the jurisdiction.', url: 'https://ecfr.gov' },
-          { sec: '49 CFR § 392.80', name: 'Prohibition Against Texting', desc: 'Prohibits commercial drivers from texting while driving a CMV.', url: 'https://ecfr.gov' },
-          { sec: '49 CFR § 392.82', name: 'Using a Hand-Held Mobile Telephone', desc: 'Prohibits holding a mobile phone to make a call or reaching for a phone while operating a CMV.', url: 'https://ecfr.gov' }
+          { sec: '49 CFR § 392.2', name: 'Applicable Operating Rules', desc: 'Every commercial motor vehicle must be operated in accordance with the laws, ordinances, and regulations of the jurisdiction.', url: ecfrSecUrl('49', '392', '392.2') },
+          { sec: '49 CFR § 392.80', name: 'Prohibition Against Texting', desc: 'Prohibits commercial drivers from texting while driving a CMV.', url: ecfrSecUrl('49', '392', '392.80') },
+          { sec: '49 CFR § 392.82', name: 'Using a Hand-Held Mobile Telephone', desc: 'Prohibits holding a mobile phone to make a call or reaching for a phone while operating a CMV.', url: ecfrSecUrl('49', '392', '392.82') }
         ]
       }
-    ];
+    );
+
     function escapeHTML(str) {
       if (!str) return '';
       return String(str)
@@ -168,7 +179,7 @@
       }
     }
 
-    function detectLocation() {
+          function detectLocation() {
       const statusEl = document.getElementById('locationStatus');
       if (!navigator.geolocation) {
         statusEl.textContent = 'Geolocation not supported.';
@@ -205,7 +216,6 @@
       const stateName = userState || 'New York';
       const stateSlug = stateName.toLowerCase().replace(/\s+/g, '_');
 
-      // 1. Match local Statute -> Substatute hierarchy first (Instant, 0ms, zero freeze)
       const matches = STATUTE_TREE.filter(function(s) {
         if (currentFilter !== 'all' && s.category !== currentFilter) return false;
         const haystack = (s.code + ' ' + s.title + ' ' + s.keywords + ' ' + s.summary).toLowerCase();
@@ -232,70 +242,26 @@
             '<div id="sub-' + s.id + '" class="substatute-list" data-count="' + s.substatutes.length + '">' + subsHtml + '</div>' +
           '</div>';
         }).join('');
+      } else {
+        const nyUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
+        const cornellUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
+        const ecfrUrl = ['https:', '', 'www.ecfr.gov', 'current', 'title-49'].join('/');
+        html =
+          '<div class="card">' +
+            '<div class="card-meta">OFFICIAL STATUTORY INDEXES</div>' +
+            '<div class="card-title">Browse Official Codes for "' + escapeHTML(query) + '"</div>' +
+            '<div class="card-text">No pre-indexed statute group matched that exact phrase yet. Open an official repository below:</div>' +
+            '<a href="' + nyUrl + '" target="_blank" rel="noopener">NY Senate Consolidated Laws ↗</a>' +
+            '<a href="' + cornellUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' ↗</a>' +
+            '<a href="' + ecfrUrl + '" target="_blank" rel="noopener">eCFR Title 49 DOT ↗</a>' +
+          '</div>';
       }
 
-      // 2. Also fetch live eCFR Titles/Sections (short, clean snippets only — no giant Federal Register walls of text)
-      resultsDiv.innerHTML = html + '<div id="ecfrLoading" style="color:#5f6368; font-size:13px; padding:6px 0;">Checking live Code of Federal Regulations (eCFR)...</div>';
-
-      const ecfrBase = ['https:', '', 'www.ecfr.gov', 'api', 'search', 'v1', 'results'].join('/');
-      let ecfrApi = ecfrBase + '?query=' + encodeURIComponent(query) + '&per_page=4';
-      if (currentFilter === 'dot') ecfrApi += '&title=49';
-
-      fetch(ecfrApi)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          const loader = document.getElementById('ecfrLoading');
-          if (loader) loader.remove();
-
-          if (data && data.results && data.results.length > 0) {
-            const ecfrCards = data.results.map(function(item, idx) {
-              const titleNum = item.hierarchy && item.hierarchy.title ? item.hierarchy.title : '49';
-              const partNum = item.hierarchy && item.hierarchy.part ? ('Part ' + item.hierarchy.part) : '';
-              const secTitle = (item.hierarchy_headings && (item.hierarchy_headings.section || item.hierarchy_headings.part)) || 'CFR Section';
-              const cleanText = String(item.full_text_excerpt || '').replace(/<[^>]*>/g, '').slice(0, 240) + '...';
-              const link = ['https:', '', 'www.ecfr.gov', 'current', 'title-' + titleNum].join('/');
-              const cardId = 'ecfr-' + idx;
-
-              return '<div class="statute-card" onclick="toggleSubstatutes(\'' + cardId + '\')">' +
-                '<div class="card-meta">LIVE eCFR • TITLE ' + escapeHTML(titleNum) + (partNum ? ' • ' + escapeHTML(partNum.toUpperCase()) : '') + '</div>' +
-                '<div class="card-title">' + escapeHTML(secTitle) + '</div>' +
-                '<div id="arrow-' + cardId + '" style="font-size:13px; font-weight:bold; color:#1a73e8;">▼ Click to View Section Preview & Official Link</div>' +
-                '<div id="sub-' + cardId + '" class="substatute-list" data-count="1">' +
-                  '<div class="sub-item">' +
-                    '<div style="font-size:13px; color:#3c4043; margin-bottom:6px;">' + escapeHTML(cleanText) + '</div>' +
-                    '<a href="' + link + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open Title ' + escapeHTML(titleNum) + ' on eCFR.gov ↗</a>' +
-                  '</div>' +
-                '</div>' +
-              '</div>';
-            }).join('');
-            resultsDiv.insertAdjacentHTML('beforeend', ecfrCards);
-          } else if (matches.length === 0) {
-            const nyUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
-            const cornellUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
-            resultsDiv.innerHTML =
-              '<div class="card">' +
-                '<div class="card-meta">OFFICIAL STATUTORY INDEXES</div>' +
-                '<div class="card-title">Browse ' + escapeHTML(stateName) + ' & Federal Codes for "' + escapeHTML(query) + '"</div>' +
-                '<a href="' + nyUrl + '" target="_blank" rel="noopener">NY Senate Consolidated Laws ↗</a>' +
-                '<a href="' + cornellUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' ↗</a>' +
-              '</div>';
-          }
-        })
-        .catch(function() {
-          const loader = document.getElementById('ecfrLoading');
-          if (loader) loader.remove();
-        });
+      resultsDiv.innerHTML = html;
     }
 
     document.getElementById('recentBillsList').innerHTML =
-      'Search above for <strong>"street racing"</strong>, <strong>"unlawful imprisonment"</strong>, or <strong>"hours of service"</strong> to drill down into statutes and substatutes.';
-
-        .statute-card { border: 1px solid #dadce0; border-radius: 10px; padding: 16px; margin-bottom: 12px; background: #fff; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
-    .statute-card:hover { border-color: #1a73e8; box-shadow: 0 2px 8px rgba(26,115,232,0.15); }
-    .substatute-list { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e8eaed; display: none; }
-    .substatute-list.open { display: block; }
-    .sub-item { padding: 10px 12px; margin-top: 8px; background: #f8f9fa; border-left: 3px solid #1a73e8; border-radius: 6px; }
-
+      'Try searching <strong>"street racing"</strong>, <strong>"unlawful imprisonment"</strong>, or <strong>"hours of service"</strong>, then click any Statute card to expand its Substatutes.';
   </script>
 </body>
 </html>
