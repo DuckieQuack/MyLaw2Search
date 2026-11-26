@@ -77,6 +77,65 @@
     let userCity = '';
     let userState = '';
 
+    // Structured Statute -> Substatute Database (Expandable anytime!)
+    const STATUTE_TREE = [
+      {
+        id: 'ny-vtl-30',
+        category: 'state',
+        jurisdiction: 'New York Vehicle & Traffic Law',
+        code: 'NY VTL Article 30',
+        title: 'Speed Restrictions, Reckless Driving & Illegal Street Racing',
+        keywords: 'speeding street racing drag race contest reckless driving traffic ticket vtl 1180 1182',
+        summary: 'Governs maximum speed limits, speed contests, drag races, and reckless operation on public highways.',
+        substatutes: [
+          { sec: 'VTL § 1180', name: 'Basic Rule and Maximum Speed Limits', desc: 'Prohibits driving at a speed greater than is reasonable and prudent under existing conditions or exceeding posted limits.', url: 'https://nysenate.gov' },
+          { sec: 'VTL § 1182', name: 'Speed Contests and Races (Illegal Street Racing)', desc: 'Prohibits unauthorized speed contests, drag races, or exhibitions of speed on any highway; misdemeanor offense.', url: 'https://nysenate.gov' },
+          { sec: 'VTL § 1212', name: 'Reckless Driving', desc: 'Defines reckless driving as operating a vehicle in a manner that unreasonably interferes with free and proper use of the public highway.', url: 'https://nysenate.gov' }
+        ]
+      },
+      {
+        id: 'ny-penal-135',
+        category: 'state',
+        jurisdiction: 'New York Penal Law',
+        code: 'NY Penal Law Article 135',
+        title: 'Kidnapping, Coercion & Unlawful Imprisonment',
+        keywords: 'holding someone against their will unlawful imprisonment kidnapping restraint abduction coercion 135',
+        summary: 'Covers offenses involving unlawful restraint, abduction, and holding a person against their will.',
+        substatutes: [
+          { sec: 'PL § 135.05', name: 'Unlawful Imprisonment in the Second Degree', desc: 'A person is guilty when he or she knowingly restrains another person without consent (Class A Misdemeanor).', url: 'https://nysenate.gov' },
+          { sec: 'PL § 135.10', name: 'Unlawful Imprisonment in the First Degree', desc: 'Restraining another person under circumstances which expose the latter to a risk of serious physical injury (Class E Felony).', url: 'https://nysenate.gov' },
+          { sec: 'PL § 135.20', name: 'Kidnapping in the Second Degree', desc: 'Abducting another person with intent to prevent liberation by secreting or using deadly physical force (Class B Felony).', url: 'https://nysenate.gov' }
+        ]
+      },
+      {
+        id: 'dot-49cfr-395',
+        category: 'dot',
+        jurisdiction: 'Federal Motor Carrier Safety Regulations (DOT / FMCSA)',
+        code: '49 CFR Part 395',
+        title: 'Hours of Service of Drivers & ELD Rules',
+        keywords: 'dot fmcsa hours of service hos eld logbook driving limit 11 hour 14 hour 395 trucking cdl',
+        summary: 'Federal driving time limits, mandatory rest breaks, and Electronic Logging Device (ELD) rules for commercial drivers.',
+        substatutes: [
+          { sec: '49 CFR § 395.3', name: 'Maximum Driving Time for Property-Carrying Vehicles', desc: '11-hour driving limit after 10 consecutive hours off duty; 14-hour on-duty window; 30-minute break requirement.', url: 'https://ecfr.gov' },
+          { sec: '49 CFR § 395.8', name: 'Driver’s Record of Duty Status (RODS)', desc: 'Requires commercial motor vehicle drivers to record their duty status for each 24-hour period.', url: 'https://ecfr.gov' },
+          { sec: '49 CFR § 395.22', name: 'Motor Carrier Responsibilities — ELD', desc: 'Mandates certified Electronic Logging Devices (ELDs) and technical transfer standards during roadside inspections.', url: 'https://ecfr.gov' }
+        ]
+      },
+      {
+        id: 'dot-49cfr-392',
+        category: 'dot',
+        jurisdiction: 'Federal Motor Carrier Safety Regulations (DOT / FMCSA)',
+        code: '49 CFR Part 392',
+        title: 'Driving of Commercial Motor Vehicles (Safety, Radar Detectors, Phones)',
+        keywords: 'dot commercial vehicle phone texting radar detector alcohol drugs speeding 392 cdl',
+        summary: 'Federal operational rules for CMV drivers including distracted driving, substance prohibitions, and traffic law compliance.',
+        substatutes: [
+          { sec: '49 CFR § 392.2', name: 'Applicable Operating Rules', desc: 'Every commercial motor vehicle must be operated in accordance with the laws, ordinances, and regulations of the jurisdiction.', url: 'https://ecfr.gov' },
+          { sec: '49 CFR § 392.80', name: 'Prohibition Against Texting', desc: 'Prohibits commercial drivers from texting while driving a CMV.', url: 'https://ecfr.gov' },
+          { sec: '49 CFR § 392.82', name: 'Using a Hand-Held Mobile Telephone', desc: 'Prohibits holding a mobile phone to make a call or reaching for a phone while operating a CMV.', url: 'https://ecfr.gov' }
+        ]
+      }
+    ];
     function escapeHTML(str) {
       if (!str) return '';
       return String(str)
@@ -86,35 +145,21 @@
         .replace(/"/g, '&quot;');
     }
 
-    function getFederalApiUrl(params) {
-      return ['https:', '', 'www.federalregister.gov', 'api', 'v1', 'documents'].join('/') + '?format=json&' + params;
+    function toggleSubstatutes(id) {
+      const el = document.getElementById('sub-' + id);
+      const arrow = document.getElementById('arrow-' + id);
+      if (!el) return;
+      const isOpen = el.classList.toggle('open');
+      if (arrow) arrow.textContent = isOpen ? '▲ Hide Substatutes' : '▼ Click to View Substatutes (' + el.dataset.count + ')';
     }
 
-    function loadRecentBills() {
-      const list = document.getElementById('recentBillsList');
-      const d = new Date();
-      d.setDate(d.getDate() - 30);
-      const since = d.toISOString().split('T');
-      const params = 'conditions' + encodeURIComponent('[type][]') + '=PRESDOCU' +
-        '&conditions' + encodeURIComponent('[publication_date][gte]') + '=' + since + '&per_page=5';
-
-      fetch(getFederalApiUrl(params))
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          if (data.results && data.results.length > 0) {
-            list.innerHTML = data.results.map(function(b) {
-              return '<div style="padding:8px 0; border-top:1px solid #e0e0e0;">' +
-                '<a href="' + escapeHTML(b.html_url) + '" target="_blank" rel="noopener" style="color:#1a0dab; font-weight:bold; text-decoration:none;">' + escapeHTML(b.title) + '</a>' +
-                '<div style="font-size:11px; color:#5f6368; margin-top:2px;">Published: ' + escapeHTML(b.publication_date) + '</div>' +
-              '</div>';
-            }).join('');
-          } else {
-            list.textContent = 'No new federal presidential documents in the last 30 days.';
-          }
-        })
-        .catch(function() {
-          list.textContent = 'Recent federal feed unavailable right now.';
-        });
+    function setFilter(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      if (document.getElementById('searchInput').value.trim()) {
+        runSearch();
+      }
     }
 
     function detectLocation() {
@@ -127,34 +172,21 @@
       navigator.geolocation.getCurrentPosition(
         function(pos) {
           const geoBase = ['https:', '', 'api.bigdatacloud.net', 'data', 'reverse-geocode-client'].join('/');
-          const geoUrl = geoBase + '?latitude=' + pos.coords.latitude + '&longitude=' + pos.coords.longitude + '&localityLanguage=en';
-          fetch(geoUrl)
-            .then(function(res) { return res.json(); })
+          fetch(geoBase + '?latitude=' + pos.coords.latitude + '&longitude=' + pos.coords.longitude + '&localityLanguage=en')
+            .then(function(r) { return r.json(); })
             .then(function(geo) {
               userCity = geo.city || geo.locality || '';
               userState = geo.principalSubdivision || '';
               const label = [userCity, userState].filter(Boolean).join(', ');
               statusEl.innerHTML = label ? '<strong>Active Area:</strong> ' + escapeHTML(label) : 'Location detected.';
             })
-            .catch(function() {
-              statusEl.textContent = 'Location found, city lookup unavailable.';
-            });
+            .catch(function() { statusEl.textContent = 'Location found.'; });
         },
-        function() {
-          statusEl.textContent = 'Location permission denied.';
-        },
+        function() { statusEl.textContent = 'Location permission denied.'; },
         { timeout: 5000 }
       );
     }
 
-    function setFilter(filter, btn) {
-      currentFilter = filter;
-      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      if (document.getElementById('searchInput').value.trim()) {
-        runSearch();
-      }
-    }
     function runSearch() {
       const query = document.getElementById('searchInput').value.trim();
       const resultsDiv = document.getElementById('results');
@@ -163,71 +195,101 @@
       const billsBox = document.getElementById('recentBillsBox');
       if (billsBox) billsBox.style.display = 'none';
 
+      const words = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; });
       const stateName = userState || 'New York';
-      const cityName = userCity || '';
       const stateSlug = stateName.toLowerCase().replace(/\s+/g, '_');
-      let instantHtml = '';
 
-      if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
-        const scope = (currentFilter === 'local' && cityName)
-          ? (cityName + ', ' + stateName + ' Municipal Code')
-          : (stateName + ' State & Municipal Statutes');
+      // 1. Match local Statute -> Substatute hierarchy first (Instant, 0ms, zero freeze)
+      const matches = STATUTE_TREE.filter(function(s) {
+        if (currentFilter !== 'all' && s.category !== currentFilter) return false;
+        const haystack = (s.code + ' ' + s.title + ' ' + s.keywords + ' ' + s.summary).toLowerCase();
+        return words.some(function(w) { return haystack.includes(w); });
+      });
 
-        const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
-        const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
-        const ecfrUrl = ['https:', '', 'www.ecfr.gov', 'current', 'title-49'].join('/');
+      let html = '';
 
-        instantHtml +=
-          '<div class="card">' +
-            '<div class="card-meta">OFFICIAL .GOV & .EDU PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
-            '<div class="card-title">' + escapeHTML(scope) + ': "' + escapeHTML(query) + '"</div>' +
-            '<div class="card-text">Browse verified government (.gov) and university (.edu) statutory repositories directly.</div>' +
-            (stateName === 'New York' ? '<a href="' + nySenateUrl + '" target="_blank" rel="noopener">NY Senate Laws (.gov) ↗</a>' : '') +
-            '<a href="' + cornellStateUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' (.edu) ↗</a>' +
-            '<a href="' + ecfrUrl + '" target="_blank" rel="noopener">eCFR Title 49 DOT (.gov) ↗</a>' +
+      if (matches.length > 0) {
+        html += matches.map(function(s) {
+          const subsHtml = s.substatutes.map(function(sub) {
+            return '<div class="sub-item">' +
+              '<div style="font-weight:bold; color:#1a73e8; font-size:14px;">' + escapeHTML(sub.sec) + ' — ' + escapeHTML(sub.name) + '</div>' +
+              '<div style="font-size:13px; color:#3c4043; margin:4px 0 6px 0;">' + escapeHTML(sub.desc) + '</div>' +
+              '<a href="' + escapeHTML(sub.url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Read Official Section Text ↗</a>' +
+            '</div>';
+          }).join('');
+
+          return '<div class="statute-card" onclick="toggleSubstatutes(\'' + s.id + '\')">' +
+            '<div class="card-meta">' + escapeHTML(s.jurisdiction.toUpperCase()) + ' • ' + escapeHTML(s.code) + '</div>' +
+            '<div class="card-title">' + escapeHTML(s.title) + '</div>' +
+            '<div class="card-text">' + escapeHTML(s.summary) + '</div>' +
+            '<div id="arrow-' + s.id + '" style="font-size:13px; font-weight:bold; color:#1a73e8;">▼ Click to View Substatutes (' + s.substatutes.length + ')</div>' +
+            '<div id="sub-' + s.id + '" class="substatute-list" data-count="' + s.substatutes.length + '">' + subsHtml + '</div>' +
           '</div>';
+        }).join('');
       }
 
-      const needsFederal = (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot');
-      resultsDiv.innerHTML = instantHtml + (needsFederal ? '<div id="fedStatus" style="color:#5f6368; font-size:13px; padding:8px 0;">Loading Federal Register results...</div>' : '');
+      // 2. Also fetch live eCFR Titles/Sections (short, clean snippets only — no giant Federal Register walls of text)
+      resultsDiv.innerHTML = html + '<div id="ecfrLoading" style="color:#5f6368; font-size:13px; padding:6px 0;">Checking live Code of Federal Regulations (eCFR)...</div>';
 
-      if (needsFederal) {
-        let params = 'conditions' + encodeURIComponent('[term]') + '=' + encodeURIComponent(query) + '&per_page=8';
-        if (currentFilter === 'dot') {
-          params += '&conditions' + encodeURIComponent('[agencies][]') + '=transportation-department' +
-                    '&conditions' + encodeURIComponent('[agencies][]') + '=federal-motor-carrier-safety-administration';
-        }
+      const ecfrBase = ['https:', '', 'www.ecfr.gov', 'api', 'search', 'v1', 'results'].join('/');
+      let ecfrApi = ecfrBase + '?query=' + encodeURIComponent(query) + '&per_page=4';
+      if (currentFilter === 'dot') ecfrApi += '&title=49';
 
-        fetch(getFederalApiUrl(params))
-          .then(function(res) { return res.json(); })
-          .then(function(data) {
-            const fedStatus = document.getElementById('fedStatus');
-            if (fedStatus) fedStatus.remove();
+      fetch(ecfrApi)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          const loader = document.getElementById('ecfrLoading');
+          if (loader) loader.remove();
 
-            if (data.results && data.results.length > 0) {
-              const fedHtml = data.results.map(function(item) {
-                const agencies = (item.agencies || []).map(function(a) { return a.name; }).filter(Boolean).join(', ') || 'Federal Agency';
-                const snippet = item.abstract || item.excerpts || 'Official Federal Register document.';
-                return '<div class="card">' +
-                  '<div class="card-meta">' + escapeHTML(item.type || 'FEDERAL').toUpperCase() + ' • ' + escapeHTML(agencies) + ' • ' + escapeHTML(item.publication_date || '') + '</div>' +
-                  '<div class="card-title">' + escapeHTML(item.title) + '</div>' +
-                  '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
-                  '<a href="' + escapeHTML(item.html_url) + '" target="_blank" rel="noopener">Read Full Text ↗</a>' +
-                '</div>';
-              }).join('');
-              resultsDiv.insertAdjacentHTML('beforeend', fedHtml);
-            } else {
-              resultsDiv.insertAdjacentHTML('beforeend', '<div class="card"><div class="card-text">No matching Federal Register documents found.</div></div>');
-            }
-          })
-          .catch(function() {
-            const fedStatus = document.getElementById('fedStatus');
-            if (fedStatus) fedStatus.remove();
-          });
-      }
+          if (data && data.results && data.results.length > 0) {
+            const ecfrCards = data.results.map(function(item, idx) {
+              const titleNum = item.hierarchy && item.hierarchy.title ? item.hierarchy.title : '49';
+              const partNum = item.hierarchy && item.hierarchy.part ? ('Part ' + item.hierarchy.part) : '';
+              const secTitle = (item.hierarchy_headings && (item.hierarchy_headings.section || item.hierarchy_headings.part)) || 'CFR Section';
+              const cleanText = String(item.full_text_excerpt || '').replace(/<[^>]*>/g, '').slice(0, 240) + '...';
+              const link = ['https:', '', 'www.ecfr.gov', 'current', 'title-' + titleNum].join('/');
+              const cardId = 'ecfr-' + idx;
+
+              return '<div class="statute-card" onclick="toggleSubstatutes(\'' + cardId + '\')">' +
+                '<div class="card-meta">LIVE eCFR • TITLE ' + escapeHTML(titleNum) + (partNum ? ' • ' + escapeHTML(partNum.toUpperCase()) : '') + '</div>' +
+                '<div class="card-title">' + escapeHTML(secTitle) + '</div>' +
+                '<div id="arrow-' + cardId + '" style="font-size:13px; font-weight:bold; color:#1a73e8;">▼ Click to View Section Preview & Official Link</div>' +
+                '<div id="sub-' + cardId + '" class="substatute-list" data-count="1">' +
+                  '<div class="sub-item">' +
+                    '<div style="font-size:13px; color:#3c4043; margin-bottom:6px;">' + escapeHTML(cleanText) + '</div>' +
+                    '<a href="' + link + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open Title ' + escapeHTML(titleNum) + ' on eCFR.gov ↗</a>' +
+                  '</div>' +
+                '</div>' +
+              '</div>';
+            }).join('');
+            resultsDiv.insertAdjacentHTML('beforeend', ecfrCards);
+          } else if (matches.length === 0) {
+            const nyUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
+            const cornellUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
+            resultsDiv.innerHTML =
+              '<div class="card">' +
+                '<div class="card-meta">OFFICIAL STATUTORY INDEXES</div>' +
+                '<div class="card-title">Browse ' + escapeHTML(stateName) + ' & Federal Codes for "' + escapeHTML(query) + '"</div>' +
+                '<a href="' + nyUrl + '" target="_blank" rel="noopener">NY Senate Consolidated Laws ↗</a>' +
+                '<a href="' + cornellUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' ↗</a>' +
+              '</div>';
+          }
+        })
+        .catch(function() {
+          const loader = document.getElementById('ecfrLoading');
+          if (loader) loader.remove();
+        });
     }
 
-    loadRecentBills();
+    document.getElementById('recentBillsList').innerHTML =
+      'Search above for <strong>"street racing"</strong>, <strong>"unlawful imprisonment"</strong>, or <strong>"hours of service"</strong> to drill down into statutes and substatutes.';
+
+        .statute-card { border: 1px solid #dadce0; border-radius: 10px; padding: 16px; margin-bottom: 12px; background: #fff; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
+    .statute-card:hover { border-color: #1a73e8; box-shadow: 0 2px 8px rgba(26,115,232,0.15); }
+    .substatute-list { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e8eaed; display: none; }
+    .substatute-list.open { display: block; }
+    .sub-item { padding: 10px 12px; margin-top: 8px; background: #f8f9fa; border-left: 3px solid #1a73e8; border-radius: 6px; }
+
   </script>
 </body>
 </html>
