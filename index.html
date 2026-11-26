@@ -144,7 +144,9 @@
       if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
         const scope = (currentFilter === 'local' && cityName) ? (cityName + ', ' + stateName + ' Municipal Code') : (stateName + ' State Statutes');
         const govQ = (currentFilter === 'local' && cityName ? cityName + ' ' : '') + stateName + ' statute OR code "' + query + '" site:.gov OR site:municode.com OR site:ecode360.com OR site:law.cornell.edu';
-const searchHref = 'https://google.com' + encodeURIComponent(govQ);
+        const searchHref = 'https://google.com';
+        const path = '/search?q=';
+        const searchHref = base = path + encodeURIComponent(govQ);
 
 htmlOut += '<div class="card" style="border-left:4px solid #1a73e8;">' +
   '<div class="card-meta">Official Statutory Match &bull; ' + scope + '</div>' +
