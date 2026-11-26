@@ -214,22 +214,22 @@
           ? (cityName + ', ' + stateName + ' Municipal Code')
           : (stateName + ' State Statutes & Codes');
 
-        const stateSlug = stateName.toLowerCase().replace(/\s+/g, '-');
-        const justiaStateUrl = ['https:', '', '://justia.com', 'codes', stateSlug, ''].join('/');
-        const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug.replace('-', '_')].join('/');
-        const municodeUrl = ['https:', '', '://municode.com'].join('/');
+             const stateSlug = stateName.toLowerCase().replace(/\s+/g, '_');
+     const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
+     const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
+     const govInfoUrl = ['https:', '', 'www.govinfo.gov', 'app', 'collection', 'uscode'].join('/');
 
-        allCards.push(
-          '<div class="card">' +
-            '<div class="card-meta">OFFICIAL STATUTORY PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
-            '<div class="card-title">' + escapeHTML(scope) + ': "' + escapeHTML(query) + '"</div>' +
-            '<div class="card-text">Browse official state statutory codes and municipal ordinances directly without search-query redirect blocks.</div>' +
-            '<a href="' + justiaStateUrl + '" target="_blank" rel="noopener">Justia ' + escapeHTML(stateName) + ' Code ↗</a>' +
-            '<a href="' + cornellStateUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' ↗</a>' +
-            '<a href="' + municodeUrl + '" target="_blank" rel="noopener">Municode Library ↗</a>' +
-          '</div>'
-        );
-      }
+     allCards.push(
+       '<div class="card">' +
+         '<div class="card-meta">OFFICIAL .GOV & .EDU PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
+         '<div class="card-title">' + escapeHTML(scope) + ': "' + escapeHTML(query) + '"</div>' +
+         '<div class="card-text">Verified government (.gov) and university (.edu) statutory repositories.</div>' +
+         (stateName === 'New York' ? '<a href="' + nySenateUrl + '" target="_blank" rel="noopener">NY Senate Laws (.gov) ↗</a>' : '') +
+         '<a href="' + cornellStateUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' (.edu) ↗</a>' +
+         '<a href="' + govInfoUrl + '" target="_blank" rel="noopener">U.S. Code (.gov) ↗</a>' +
+       '</div>'
+     );
+
       const tasks = [];
 
       if (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot') {
