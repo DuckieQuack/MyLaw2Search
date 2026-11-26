@@ -277,14 +277,19 @@
         if (statusEl) statusEl.innerHTML = '<strong>Searching State:</strong> ' + escapeHTML(activeState);
       }
 
-      const words = topicQuery.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; });
+            const normalizedQuery = topicQuery.toLowerCase().replace(/-/g, '');
+      const words = normalizedQuery.split(/\s+/).filter(function(w) { return w.length > 2; }).map(function(w) {
+        return w.endsWith('s') && w.length > 3 ? w.slice(0, -1) : w;
+      });
+
       const stateSlug = activeState.toLowerCase().replace(/\s+/g, '_');
       const stateHyphen = activeState.toLowerCase().replace(/\s+/g, '-');
 
       const matches = STATUTE_TREE.filter(function(s) {
         if (currentFilter !== 'all' && s.category !== currentFilter) return false;
         if ((s.category === 'state' || s.category === 'local') && activeState !== 'New York') return false;
-        const haystack = (s.code + ' ' + s.title + ' ' + s.keywords + ' ' + s.summary).toLowerCase();
+      const haystack = (s.code + ' ' + s.title + ' ' + s.keywords + ' ' + s.summary).toLowerCase().replace(/-/g, '');
+
         return words.some(function(w) { return haystack.includes(w); });
       });
 
@@ -337,6 +342,8 @@
       resultsDiv.innerHTML = html;
             if (activeState === 'New York' && (currentFilter === 'all' || currentFilter === 'state')) {
         resultsDiv.insertAdjacentHTML('beforeend', '<div id="nyApiLoading" style="color:#5f6368; font-size:13px; padding:6px 0;">Searching live NY Senate Consolidated Laws (50,000+ sections)...</div>');
+        const apiTerm = /\bebikes?\b|\be-bikes?\b/i.test(topicQuery) ? 'bicycle with electric assist' : topicQuery;
+        fetchNySenateLaws(apiTerm, function(items) {
 
         fetchNySenateLaws(topicQuery, function(items) {
           const loader = document.getElementById('nyApiLoading');
