@@ -83,6 +83,50 @@
     let userCity = '';
     let userState = '';
 
+          const STATE_MAP = {
+      "alabama":"Alabama","al":"Alabama","alaska":"Alaska","ak":"Alaska","arizona":"Arizona","az":"Arizona",
+      "arkansas":"Arkansas","ar":"Arkansas","california":"California","ca":"California","colorado":"Colorado","co":"Colorado",
+      "connecticut":"Connecticut","ct":"Connecticut","delaware":"Delaware","de":"Delaware","florida":"Florida","fl":"Florida",
+      "georgia":"Georgia","ga":"Georgia","hawaii":"Hawaii","hi":"Hawaii","idaho":"Idaho","id":"Idaho",
+      "illinois":"Illinois","il":"Illinois","indiana":"Indiana","in":"Indiana","iowa":"Iowa","ia":"Iowa",
+      "kansas":"Kansas","ks":"Kansas","kentucky":"Kentucky","ky":"Kentucky","louisiana":"Louisiana","la":"Louisiana",
+      "maine":"Maine","me":"Maine","maryland":"Maryland","md":"Maryland","massachusetts":"Massachusetts","ma":"Massachusetts",
+      "michigan":"Michigan","mi":"Michigan","minnesota":"Minnesota","mn":"Minnesota","mississippi":"Mississippi","ms":"Mississippi",
+      "missouri":"Missouri","mo":"Missouri","montana":"Montana","mt":"Montana","nebraska":"Nebraska","ne":"Nebraska",
+      "nevada":"Nevada","nv":"Nevada","new hampshire":"New Hampshire","nh":"New Hampshire","new jersey":"New Jersey","nj":"New Jersey",
+      "new mexico":"New Mexico","nm":"New Mexico","new york":"New York","ny":"New York","north carolina":"North Carolina","nc":"North Carolina",
+      "north dakota":"North Dakota","nd":"North Dakota","ohio":"Ohio","oh":"Ohio","oklahoma":"Oklahoma","ok":"Oklahoma",
+      "oregon":"Oregon","or":"Oregon","pennsylvania":"Pennsylvania","pa":"Pennsylvania","rhode island":"Rhode Island","ri":"Rhode Island",
+      "south carolina":"South Carolina","sc":"South Carolina","south dakota":"South Dakota","sd":"South Dakota",
+      "tennessee":"Tennessee","tn":"Tennessee","texas":"Texas","tx":"Texas","utah":"Utah","ut":"Utah",
+      "vermont":"Vermont","vt":"Vermont","virginia":"Virginia","va":"Virginia","washington":"Washington","wa":"Washington",
+      "west virginia":"West Virginia","wv":"West Virginia","wisconsin":"Wisconsin","wi":"Wisconsin","wyoming":"Wyoming","wy":"Wyoming"
+    };
+
+    function detectStateFromQuery(rawQuery) {
+      const lower = rawQuery.toLowerCase();
+      // Check two-word state names first (e.g., "new york", "north carolina")
+      const twoWordStates = ["new hampshire","new jersey","new mexico","new york","north carolina","north dakota","rhode island","south carolina","south dakota","west virginia"];
+      for (let i = 0; i < twoWordStates.length; i++) {
+        const st = twoWordStates[i];
+        const regex = new RegExp('\\b' + st + '\\b', 'i');
+        if (regex.test(lower)) {
+          return { detectedState: STATE_MAP[st], cleanedQuery: rawQuery.replace(regex, '').trim() };
+        }
+      }
+      // Check single-word state names and 2-letter abbreviations (e.g., "texas", "pa", "ca")
+      const tokens = lower.split(/\s+/);
+      for (let j = 0; j < tokens.length; j++) {
+        const cleanTok = tokens[j].replace(/[^a-z]/g, '');
+        if (STATE_MAP[cleanTok] && cleanTok !== 'in' && cleanTok !== 'or' && cleanTok !== 'me' && cleanTok !== 'hi' && cleanTok !== 'ok') {
+          const rx = new RegExp('\\b' + cleanTok + '\\b', 'i');
+          return { detectedState: STATE_MAP[cleanTok], cleanedQuery: rawQuery.replace(rx, '').trim() };
+        }
+      }
+      return { detectedState: '', cleanedQuery: rawQuery };
+    }
+
+
     function nyLawUrl(lawCode, section) {
       return ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', lawCode, section].join('/');
     }
@@ -205,24 +249,69 @@
     }
 
     function runSearch() {
-      const query = document.getElementById('searchInput').value.trim();
+          function runSearch() {
+      const rawQuery = document.getElementById('searchInput').value.trim();
       const resultsDiv = document.getElementById('results');
-      if (!query) return;
+      if (!rawQuery) return;
 
       const billsBox = document.getElementById('recentBillsBox');
       if (billsBox) billsBox.style.display = 'none';
 
-      const words = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; });
-      const stateName = userState || 'New York';
-      const stateSlug = stateName.toLowerCase().replace(/\s+/g, '_');
+      // Detect if the user typed a state name/abbreviation in their search
+      const parsed = detectStateFromQuery(rawQuery);
+      const activeState = parsed.detectedState || userState || 'New York';
+      const topicQuery = parsed.cleanedQuery || rawQuery;
 
+      // Update location status bar if a state was detected from the search text
+      if (parsed.detectedState) {
+        const statusEl = document.getElementById('locationStatus');
+        if (statusEl) statusEl.innerHTML = '<strong>Searching State:</strong> ' + escapeHTML(activeState);
+      }
+
+      const words = topicQuery.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; });
+      const stateSlug = activeState.toLowerCase().replace(/\s+/g, '_');
+      const stateHyphen = activeState.toLowerCase().replace(/\s+/g, '-');
+
+      // Match local pre-indexed Statute -> Substatute hierarchy
       const matches = STATUTE_TREE.filter(function(s) {
         if (currentFilter !== 'all' && s.category !== currentFilter) return false;
+        if ((s.category === 'state' || s.category === 'local') && activeState !== 'New York') return false;
         const haystack = (s.code + ' ' + s.title + ' ' + s.keywords + ' ' + s.summary).toLowerCase();
         return words.some(function(w) { return haystack.includes(w); });
       });
 
       let html = '';
+
+      // Dynamic State Statutory Drill-Down Card (automatically adapts to whichever state was searched or located!)
+      if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
+        const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
+        const cornellSearchUrl = ['https:', '', 'www.law.cornell.edu', 'search', 'site', encodeURIComponent(activeState + ' ' + topicQuery)].join('/');
+        const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
+        const stateCardId = 'state-portal-' + stateHyphen;
+
+        html +=
+          '<div class="statute-card" onclick="toggleSubstatutes(\'' + stateCardId + '\')">' +
+            '<div class="card-meta">' + escapeHTML(activeState.toUpperCase()) + ' STATUTES & CODES • AUTO-DETECTED JURISDICTION</div>' +
+            '<div class="card-title">' + escapeHTML(activeState) + ' Laws for "' + escapeHTML(topicQuery) + '"</div>' +
+            '<div class="card-text">Official codified statutes, penal codes, and vehicle regulations for ' + escapeHTML(activeState) + '.</div>' +
+            '<div id="arrow-' + stateCardId + '" style="font-size:13px; font-weight:bold; color:#1a73e8;">▼ Click to View ' + escapeHTML(activeState) + ' Statutory Sub-Portals</div>' +
+            '<div id="sub-' + stateCardId + '" class="substatute-list open" data-count="2">' +
+              '<div class="sub-item">' +
+                '<div style="font-weight:bold; color:#1a73e8; font-size:14px;">Cornell LII — ' + escapeHTML(activeState) + ' Annotated Statutes (.edu)</div>' +
+                '<div style="font-size:13px; color:#3c4043; margin:4px 0 6px 0;">Browse full state statutory titles, penal codes, and court rules for ' + escapeHTML(activeState) + '.</div>' +
+                '<a href="' + cornellStateUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open ' + escapeHTML(activeState) + ' Code Index ↗</a>' +
+              '</div>' +
+              '<div class="sub-item">' +
+                '<div style="font-weight:bold; color:#1a73e8; font-size:14px;">Search "' + escapeHTML(topicQuery) + '" in ' + escapeHTML(activeState) + ' Statutes</div>' +
+                '<div style="font-size:13px; color:#3c4043; margin:4px 0 6px 0;">Targeted statutory lookup across ' + escapeHTML(activeState) + ' legal repositories.</div>' +
+                '<a href="' + cornellSearchUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Search ' + escapeHTML(activeState) + ' Statutes ↗</a>' +
+              '</div>' +
+              (activeState === 'New York'
+                ? '<div class="sub-item"><div style="font-weight:bold; color:#1a73e8; font-size:14px;">New York State Senate Open Legislation (.gov)</div><div style="font-size:13px; color:#3c4043; margin:4px 0 6px 0;">Official consolidated NY Penal Law, VTL, CPL, and municipal laws.</div><a href="' + nySenateUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Browse NY Consolidated Laws ↗</a></div>'
+                : '') +
+            '</div>' +
+          '</div>';
+      }
 
       if (matches.length > 0) {
         html += matches.map(function(s) {
@@ -242,23 +331,11 @@
             '<div id="sub-' + s.id + '" class="substatute-list" data-count="' + s.substatutes.length + '">' + subsHtml + '</div>' +
           '</div>';
         }).join('');
-      } else {
-        const nyUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
-        const cornellUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
-        const ecfrUrl = ['https:', '', 'www.ecfr.gov', 'current', 'title-49'].join('/');
-        html =
-          '<div class="card">' +
-            '<div class="card-meta">OFFICIAL STATUTORY INDEXES</div>' +
-            '<div class="card-title">Browse Official Codes for "' + escapeHTML(query) + '"</div>' +
-            '<div class="card-text">No pre-indexed statute group matched that exact phrase yet. Open an official repository below:</div>' +
-            '<a href="' + nyUrl + '" target="_blank" rel="noopener">NY Senate Consolidated Laws ↗</a>' +
-            '<a href="' + cornellUrl + '" target="_blank" rel="noopener">Cornell LII ' + escapeHTML(stateName) + ' ↗</a>' +
-            '<a href="' + ecfrUrl + '" target="_blank" rel="noopener">eCFR Title 49 DOT ↗</a>' +
-          '</div>';
       }
 
       resultsDiv.innerHTML = html;
     }
+
 
      function loadRecentBills() {
    const list = document.getElementById('recentBillsList');
