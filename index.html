@@ -152,61 +152,97 @@
       if (isSearching) return;
       const query = document.getElementById('searchInput').value.trim();
       const resultsDiv = document.getElementById('results');
+      const searchBtn = document.getElementById('searchBtn');
       if (!query) return;
 
       isSearching = true;
+      searchBtn.disabled = true;
+
       const billsBox = document.getElementById('recentBillsBox');
       if (billsBox) billsBox.style.display = 'none';
-      resultsDiv.innerHTML = '<p style="color:#5f6368;">Searching...</p>';
 
       const stateName = userState || 'New York';
       const cityName = userCity || '';
-      let htmlOut = '';
+      let instantHtml = '';
 
+      // 1. Render State & Local cards IMMEDIATELY (never waits on network)
       if (currentFilter === 'all' || currentFilter === 'state' || currentFilter === 'local') {
-        const scope = (currentFilter === 'local' && cityName) ? (cityName + ', ' + stateName) : stateName;
+        const scope = (currentFilter === 'local' && cityName)
+          ? (cityName + ', ' + stateName + ' Municipal Code')
+          : (stateName + ' State & Municipal Statutes');
+
         const govQ = (currentFilter === 'local' && cityName ? cityName + ' ' : '') +
           stateName + ' statute OR code "' + query + '" (site:.gov OR site:municode.com OR site:ecode360.com OR site:law.cornell.edu)';
-        htmlOut +=
+        const googleSearchUrl = 'https://google.com' + encodeURIComponent(govQ);
+        const cornellUrl = 'https://cornell.edu' + encodeURIComponent(stateName + ' ' + query);
+        const ecodeUrl = 'https://ecode360.com' + encodeURIComponent((cityName ? cityName + ' ' : '') + query);
+
+        instantHtml +=
           '<div class="card">' +
-            '<div class="card-meta">STATUTORY PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
-            '<div class="card-title">Search ' + escapeHTML(scope) + ' Laws for "' + escapeHTML(query) + '"</div>' +
-            '<a href="https://google.com' + encodeURIComponent(govQ) + '" target="_blank" rel="noopener">Search .gov & Code Portals ↗</a>' +
-            '<a href="https://cornell.edu' + encodeURIComponent(stateName + ' ' + query) + '" target="_blank" rel="noopener">Cornell LII ↗</a>' +
-            '<a href="https://ecode360.com' + encodeURIComponent((cityName ? cityName + ' ' : '') + query) + '" target="_blank" rel="noopener">eCode360 ↗</a>' +
+            '<div class="card-meta">STATUTORY & MUNICIPAL PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
+            '<div class="card-title">Search Official ' + escapeHTML(scope) + ' for "' + escapeHTML(query) + '"</div>' +
+            '<div class="card-text">Direct lookup across verified government domains (.gov), Cornell Legal Information Institute (LII), eCode360, and Municode libraries.</div>' +
+            '<a href="' + googleSearchUrl + '" target="_blank" rel="noopener">Search .gov & Code Portals ↗</a>' +
+            '<a href="' + cornellUrl + '" target="_blank" rel="noopener">Cornell LII ↗</a>' +
+            '<a href="' + ecodeUrl + '" target="_blank" rel="noopener">eCode360 Municipal ↗</a>' +
           '</div>';
       }
 
-      if (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot') {
+      // Show instant results right away + a loading indicator for Federal results
+      const needsFederal = (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot');
+      resultsDiv.innerHTML = instantHtml + (needsFederal ? '<div id="fedStatus" style="color:#5f6368; font-size:13px; padding:8px 0;">Checking Federal Register...</div>' : '');
+
+      // 2. Fetch Federal Register separately so a timeout never erases State/Local cards
+      if (needsFederal) {
         try {
           let apiUrl = 'https://federalregister.gov' +
-            encodeURIComponent('[term]') + '=' + encodeURIComponent(query) + '&per_page=5';
+            encodeURIComponent('[term]') + '=' + encodeURIComponent(query) + '&per_page=8';
+
           if (currentFilter === 'dot') {
-            apiUrl += '&conditions' + encodeURIComponent('[agencies][]') + '=transportation-department';
+            apiUrl += '&conditions' + encodeURIComponent('[agencies][]') + '=transportation-department' +
+                      '&conditions' + encodeURIComponent('[agencies][]') + '=federal-motor-carrier-safety-administration';
           }
-          const res = await fetch(apiUrl);
-          const data = await res.json();
+
+          const data = await fetchWithTimeout(apiUrl, 8000);
+          const fedStatus = document.getElementById('fedStatus');
+          if (fedStatus) fedStatus.remove();
+
           if (data.results && data.results.length > 0) {
-            htmlOut += data.results.map(item =>
-              '<div class="card">' +
-                '<div class="card-meta">' + escapeHTML(item.type || 'FEDERAL').toUpperCase() + ' • ' + escapeHTML(item.publication_date || '') + '</div>' +
-                '<div class="card-title">' + escapeHTML(item.title) + '</div>' +
-                '<div class="card-text">' + escapeHTML(item.abstract || 'Click below to view full document.') + '</div>' +
-                '<a href="' + escapeHTML(item.html_url) + '" target="_blank" rel="noopener">Read Full Text ↗</a>' +
-              '</div>'
-            ).join('');
+            const fedHtml = data.results.map(item => {
+              const agencies = (item.agencies || []).map(a => a.name).filter(Boolean).join(', ') || 'Federal Agency';
+              const snippet = item.abstract || item.excerpts || 'Official Federal Register document. Click below to view full text.';
+              return (
+                '<div class="card">' +
+                  '<div class="card-meta">' + escapeHTML(item.type || 'FEDERAL DOCUMENT').toUpperCase() + ' • ' + escapeHTML(agencies) + ' • ' + escapeHTML(item.publication_date || '') + '</div>' +
+                  '<div class="card-title">' + escapeHTML(item.title) + '</div>' +
+                  '<div class="card-text">' + escapeHTML(snippet) + '</div>' +
+                  '<a href="' + escapeHTML(item.html_url) + '" target="_blank" rel="noopener">Read Full Text ↗</a>' +
+                  (item.pdf_url ? '<a href="' + escapeHTML(item.pdf_url) + '" target="_blank" rel="noopener">Official PDF ↗</a>' : '') +
+                '</div>'
+              );
+            }).join('');
+            resultsDiv.insertAdjacentHTML('beforeend', fedHtml);
+          } else {
+            resultsDiv.insertAdjacentHTML('beforeend', '<div class="card"><div class="card-text">No matching Federal Register documents found for "<strong>' + escapeHTML(query) + '</strong>".</div></div>');
           }
-        } catch (e) {
-          htmlOut += '<div class="card"><div class="card-text">Federal Register API could not be reached.</div></div>';
+        } catch (err) {
+          const fedStatus = document.getElementById('fedStatus');
+          if (fedStatus) fedStatus.remove();
+          const frSearchUrl = 'https://federalregister.gov' + encodeURIComponent(query);
+          resultsDiv.insertAdjacentHTML('beforeend',
+            '<div class="card">' +
+              '<div class="card-meta" style="color:#d93025;">FEDERAL API DELAYED</div>' +
+              '<div class="card-text">Live Federal Register API did not respond in time (or was blocked by local file security).</div>' +
+              '<a href="' + frSearchUrl + '" target="_blank" rel="noopener">Search FederalRegister.gov Directly ↗</a>' +
+            '</div>'
+          );
         }
       }
 
-      resultsDiv.innerHTML = htmlOut || '<div class="card"><div class="card-text">No results found.</div></div>';
       isSearching = false;
+      searchBtn.disabled = false;
     }
 
-    document.getElementById('recentBillsList').innerHTML =
-      '<button class="loc-btn" onclick="loadRecentBills()">Load Last 30 Days of Federal Actions</button>';
   </script>
 </body>
 </html>
