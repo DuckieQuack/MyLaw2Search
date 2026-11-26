@@ -146,7 +146,7 @@
         const govQ = (currentFilter === 'local' && cityName ? cityName + ' ' : '') + stateName + ' statute OR code "' + query + '" site:.gov OR site:municode.com OR site:ecode360.com OR site:law.cornell.edu';
         const searchHref = 'https://google.com';
         const path = '/search?q=';
-        const searchHref = base = path + encodeURIComponent(govQ);
+        const searchHref = base + path + encodeURIComponent(govQ);
 
 htmlOut += '<div class="card" style="border-left:4px solid #1a73e8;">' +
   '<div class="card-meta">Official Statutory Match &bull; ' + scope + '</div>' +
