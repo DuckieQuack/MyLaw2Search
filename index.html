@@ -173,9 +173,14 @@
 
         const govQ = (currentFilter === 'local' && cityName ? cityName + ' ' : '') +
           stateName + ' statute OR code "' + query + '" (site:.gov OR site:municode.com OR site:ecode360.com OR site:law.cornell.edu)';
-        const googleSearchUrl = 'https://google.com' + encodeURIComponent(govQ);
-        const cornellUrl = 'https://cornell.edu' + encodeURIComponent(stateName + ' ' + query);
-        const ecodeUrl = 'https://ecode360.com' + encodeURIComponent((cityName ? cityName + ' ' : '') + query);
+        const qEncoded = encodeURIComponent(govQ);
+        const stateQuery = encodeURIComponent(stateName + ' ' + query);
+        const localQuery = encodeURIComponent((cityName ? cityName + ' ' : '') + query);
+
+        const googleSearchUrl = ['https://google.com', 'search?q=' + qEncoded].join('/');
+        const cornellUrl = ['https://cornell.edu', 'search', 'site', stateQuery].join('/');
+        const ecodeUrl = ['https://ecode360.com', 'search?query=' + localQuery].join('/');
+
 
 
         instantHtml +=
