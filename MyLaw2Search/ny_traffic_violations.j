@@ -278,7 +278,7 @@ window.STATUTE_TREE.push(
     jurisdiction: 'New York Vehicle & Traffic Law',
     code: 'NY VTL §§ 381, 1250–1253, 1242',
     title: 'Motorcycles, E-Bikes, Electric Scooters & Lane Splitting',
-    keywords: 'motorcycle helmet eye protection lane splitting wheelie e-bike electric scooter bicycle sidewalk 381 1252 1242',
+    keywords: 'motorcycle helmet eye protection lane splitting wheelie ebike ebikes e-bike e-bikes bicycle with electric assist electric scooter bicycle sidewalk 102-c 381 1252 1242',
     summary: 'Motorcycle helmet/goggle laws, prohibition on lane splitting, and NY e-bike / e-scooter operating rules.',
     substatutes: [
       { sec: 'VTL § 381(6)', name: 'Operating / Riding a Motorcycle Without an Approved Helmet', desc: 'Requires all motorcycle operators and passengers to wear a DOT-compliant protective helmet.', url: nyLawUrl('VAT', '381') },
