@@ -214,7 +214,7 @@
           ? (cityName + ', ' + stateName + ' Municipal Code')
           : (stateName + ' State Statutes & Codes');
 
-             const stateSlug = stateName.toLowerCase().replace(/\s+/g, '_');
+     const stateSlug = stateName.toLowerCase().replace(/\s+/g, '_');
      const cornellStateUrl = ['https:', '', 'www.law.cornell.edu', 'states', stateSlug].join('/');
      const nySenateUrl = ['https:', '', 'www.nysenate.gov', 'legislation', 'laws', 'CONSOLIDATED'].join('/');
      const govInfoUrl = ['https:', '', 'www.govinfo.gov', 'app', 'collection', 'uscode'].join('/');
@@ -229,7 +229,7 @@
          '<a href="' + govInfoUrl + '" target="_blank" rel="noopener">U.S. Code (.gov) ↗</a>' +
        '</div>'
      );
-
+    }
       const tasks = [];
 
       if (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot') {
