@@ -205,10 +205,11 @@
             '<div class="card-meta">STATUTORY & MUNICIPAL PORTALS • ' + escapeHTML(scope.toUpperCase()) + '</div>' +
             '<div class="card-title">Search Official ' + escapeHTML(scope) + ' for "' + escapeHTML(query) + '"</div>' +
             '<div class="card-text">Direct lookup across verified government domains (.gov), Cornell Legal Information Institute (LII), eCode360, and Municode libraries.</div>' +
-            '<a href="' + govUrl + '" target="_blank" rel="noopener">Search .gov & Code Portals ↗</a>' +
-            '<a href="' + cornellUrl + '" target="_blank" rel="noopener">Cornell LII ↗</a>' +
-            '<a href="' + ecodeUrl + '" target="_blank" rel="noopener">eCode360 Municipal ↗</a>' +
+            '<a href="' + govUrl + '" rel="noreferrer">Search .gov & Code Portals →</a>' +
+            '<a href="' + cornellUrl + '" rel="noreferrer">Cornell LII →</a>' +
+            '<a href="' + ecodeUrl + '" rel="noreferrer">eCode360 Municipal →</a>' +
           '</div>';
+
       }
 
       const needsFederal = (currentFilter === 'all' || currentFilter === 'federal' || currentFilter === 'dot');
